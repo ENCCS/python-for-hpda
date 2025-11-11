@@ -19,6 +19,9 @@
 :::{highlight} python
 :::
 
+This episode will give an introduction to the concepts of *Series* and *DataFrame*
+and how they can be manipulated using different Python packages.
+
 ## Pandas
 
 Pandas is a Python package that provides high-performance and easy to use data structures and data analysis tools. Built on NumPy arrays, Pandas is particularly well suited to analyze tabular and time series data. Although NumPy could in principle deal with structured arrays (arrays with mixed data types), it is not efficient.
