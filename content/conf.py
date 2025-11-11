@@ -14,14 +14,14 @@
 # -- Project information -----------------------------------------------------
 
 # FIXME: choose title
-project = "Your lesson name"
+project = "Python for High Performance Data Analytics"
 # FIXME: insert correct author
-author = "The contributors"
+author = "Francesco Fiusco, Qiang Li, Ashwin Mohanan, Juan Triviño, Yonglei Wang"
 copyright = f"2025, ENCCS, {author}"
 
 # FIXME: github organization / user that the repository belongs to
 github_user = "ENCCS"
-github_repo_name = ""  # auto-detected from dirname if blank
+github_repo_name = "python-for-hpda"  # auto-detected from dirname if blank
 github_version = "main"
 conf_py_path = "/content/"  # with leading and trailing slash
 
