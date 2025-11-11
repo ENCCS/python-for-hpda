@@ -17,9 +17,13 @@
 :caption: The lesson
 :maxdepth: 1
 
-scientific_data.md
-arrays.md 
-tabular_data.md 
+tabular-data
+interfacing-with-storage
+visualisation
+multithreading
+dask
+episode
+
 ```
 
 ```{toctree}
