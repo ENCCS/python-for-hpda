@@ -105,7 +105,10 @@ episode, the [NYC taxi](https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.
 will be used to showcase how datasets can be accessed, summarised and manipulated
 in both Pandas and Polars. The dataset can be download in [Parquet](https://parquet.apache.org/)
 format from the link above (the file for the month of January was used in this
-case).
+case). The dataset contains information about taxi trips performed in New York,
+such as the ID of the vendor, the total fare, pickup and drop-off time and
+location (expressed as an ID), type of payment, whether additional fees were
+charged and more.
 
 ### Opening a dataset
 
@@ -483,35 +486,332 @@ This is a lazy representation of an operation we want to perform, which can
 be further manipulated or just printed. For it to actually produce data, a
 *context* is needed.
 
-:::{discussion}
-Discuss the following.
+### Contexts
 
-- A discussion section
-- Another discussion topic
-:::
+The same Polars expression can produce different results depending on the
+context where it is used. Four common contexts include:
 
-## Section
+- `select`
+- `with_columns`
+- `filter`
+- `group_by`
 
-```
+Both `select` and `with_columns` can produce new columns, which may be
+aggregations, combinations of other columns, or literals. The difference
+between the two is that `select` only includes the columns contained in its
+input expression, whereas `with_columns` returns a new dataframe which
+contains all the columns from the original dataframe and the new ones created
+by the expression. To exemplify, using our earlier example of computing the
+average speed during a trip, using `select` would yield a single column,
+whereas `with_columns` would return the original dataframe with an additional
+column called `trip distance`:
 
-print("hello world")
-
-# This uses the default highlighting language
-
+```python
+df.select(pl.col('trip_distance')/pl.col('trip_duration_sec')*3600)
+shape: (3_475_226, 1)
+┌───────────────┐
+│ trip_distance │
+│ ---           │
+│ f64           │
+╞═══════════════╡
+│ 11.497006     │
+│ 11.764706     │
+│ 18.461538     │
+│ 5.60479       │
+│ 11.207547     │
+│ …             │
+│ 13.68899      │
+│ 19.42398      │
+│ 9.879418      │
+│ 9.339901      │
+│ 12.781395     │
+└───────────────┘
 ```
 
 ```python
-print("hello world)
+df.with_columns((pl.col('trip_distance')/pl.col('trip_duration_sec')*3600).alias("avg_sp\
+eed_mph"))
+shape: (3_475_226, 22)
+┌──────────┬──────────┬──────────┬──────────┬───┬──────────┬──────────┬──────────┬──────────┐
+│ VendorID ┆ tpep_pic ┆ tpep_dro ┆ passenge ┆ … ┆ Airport_ ┆ cbd_cong ┆ trip_dur ┆ avg_spee │
+│ ---      ┆ kup_date ┆ poff_dat ┆ r_count  ┆   ┆ fee      ┆ estion_f ┆ ation_se ┆ d_mph    │
+│ i32      ┆ time     ┆ etime    ┆ ---      ┆   ┆ ---      ┆ ee       ┆ c        ┆ ---      │
+│          ┆ ---      ┆ ---      ┆ i64      ┆   ┆ f64      ┆ ---      ┆ ---      ┆ f64      │
+│          ┆ datetime ┆ datetime ┆          ┆   ┆          ┆ f64      ┆ i64      ┆          │
+│          ┆ [μs]     ┆ [μs]     ┆          ┆   ┆          ┆          ┆          ┆          │
+╞══════════╪══════════╪══════════╪══════════╪═══╪══════════╪══════════╪══════════╪══════════╡
+│ 1        ┆ 2025-01- ┆ 2025-01- ┆ 1        ┆ … ┆ 0.0      ┆ 0.0      ┆ 501      ┆ 11.49700 │
+│          ┆ 01       ┆ 01       ┆          ┆   ┆          ┆          ┆          ┆ 6        │
+│          ┆ 00:18:38 ┆ 00:26:59 ┆          ┆   ┆          ┆          ┆          ┆          │
+│ 1        ┆ 2025-01- ┆ 2025-01- ┆ 1        ┆ … ┆ 0.0      ┆ 0.0      ┆ 153      ┆ 11.76470 │
+│          ┆ 01       ┆ 01       ┆          ┆   ┆          ┆          ┆          ┆ 6        │
+│          ┆ 00:32:40 ┆ 00:35:13 ┆          ┆   ┆          ┆          ┆          ┆          │
+│ 1        ┆ 2025-01- ┆ 2025-01- ┆ 1        ┆ … ┆ 0.0      ┆ 0.0      ┆ 117      ┆ 18.46153 │
+│          ┆ 01       ┆ 01       ┆          ┆   ┆          ┆          ┆          ┆ 8        │
+│          ┆ 00:44:04 ┆ 00:46:01 ┆          ┆   ┆          ┆          ┆          ┆          │
+│ 2        ┆ 2025-01- ┆ 2025-01- ┆ 3        ┆ … ┆ 0.0      ┆ 0.0      ┆ 334      ┆ 5.60479  │
+│          ┆ 01       ┆ 01       ┆          ┆   ┆          ┆          ┆          ┆          │
+│          ┆ 00:14:27 ┆ 00:20:01 ┆          ┆   ┆          ┆          ┆          ┆          │
+│ 2        ┆ 2025-01- ┆ 2025-01- ┆ 3        ┆ … ┆ 0.0      ┆ 0.0      ┆ 212      ┆ 11.20754 │
+│          ┆ 01       ┆ 01       ┆          ┆   ┆          ┆          ┆          ┆ 7        │
+│          ┆ 00:21:34 ┆ 00:25:06 ┆          ┆   ┆          ┆          ┆          ┆          │
+│ …        ┆ …        ┆ …        ┆ …        ┆ … ┆ …        ┆ …        ┆ …        ┆ …        │
+│ 2        ┆ 2025-01- ┆ 2025-01- ┆ null     ┆ … ┆ null     ┆ 0.75     ┆ 881      ┆ 13.68899 │
+│          ┆ 31       ┆ 31       ┆          ┆   ┆          ┆          ┆          ┆          │
+│          ┆ 23:01:48 ┆ 23:16:29 ┆          ┆   ┆          ┆          ┆          ┆          │
+│ 2        ┆ 2025-01- ┆ 2025-02- ┆ null     ┆ … ┆ null     ┆ 0.75     ┆ 1618     ┆ 19.42398 │
+│          ┆ 31       ┆ 01       ┆          ┆   ┆          ┆          ┆          ┆          │
+│          ┆ 23:50:29 ┆ 00:17:27 ┆          ┆   ┆          ┆          ┆          ┆          │
+│ 2        ┆ 2025-01- ┆ 2025-01- ┆ null     ┆ … ┆ null     ┆ 0.75     ┆ 962      ┆ 9.879418 │
+│          ┆ 31       ┆ 31       ┆          ┆   ┆          ┆          ┆          ┆          │
+│          ┆ 23:26:59 ┆ 23:43:01 ┆          ┆   ┆          ┆          ┆          ┆          │
+│ 2        ┆ 2025-01- ┆ 2025-01- ┆ null     ┆ … ┆ null     ┆ 0.75     ┆ 1218     ┆ 9.339901 │
+│          ┆ 31       ┆ 31       ┆          ┆   ┆          ┆          ┆          ┆          │
+│          ┆ 23:14:34 ┆ 23:34:52 ┆          ┆   ┆          ┆          ┆          ┆          │
+│ 2        ┆ 2025-01- ┆ 2025-02- ┆ null     ┆ … ┆ null     ┆ 0.0      ┆ 645      ┆ 12.78139 │
+│          ┆ 31       ┆ 01       ┆          ┆   ┆          ┆          ┆          ┆ 5        │
+│          ┆ 23:56:42 ┆ 00:07:27 ┆          ┆   ┆          ┆          ┆          ┆          │
+└──────────┴──────────┴──────────┴──────────┴───┴──────────┴──────────┴──────────┴──────────┘
 ```
 
-## Exercises: description
+The `filter` context filters the rows of a dataframe based on one (or more)
+expressions which evaluate to a Boolean, e.g.
 
-:::{exercise} Exercise Topic-1: imperative description of exercise
-Exercise text here.
+```python
+df.filter(pl.col('avg_speed_mph') < 1)
+shape: (104_410, 22)
+┌──────────┬──────────┬──────────┬──────────┬───┬──────────┬──────────┬──────────┬──────────┐
+│ VendorID ┆ tpep_pic ┆ tpep_dro ┆ passenge ┆ … ┆ Airport_ ┆ cbd_cong ┆ trip_dur ┆ avg_spee │
+│ ---      ┆ kup_date ┆ poff_dat ┆ r_count  ┆   ┆ fee      ┆ estion_f ┆ ation_se ┆ d_mph    │
+│ i32      ┆ time     ┆ etime    ┆ ---      ┆   ┆ ---      ┆ ee       ┆ c        ┆ ---      │
+│          ┆ ---      ┆ ---      ┆ i64      ┆   ┆ f64      ┆ ---      ┆ ---      ┆ f64      │
+│          ┆ datetime ┆ datetime ┆          ┆   ┆          ┆ f64      ┆ i64      ┆          │
+│          ┆ [μs]     ┆ [μs]     ┆          ┆   ┆          ┆          ┆          ┆          │
+╞══════════╪══════════╪══════════╪══════════╪═══╪══════════╪══════════╪══════════╪══════════╡
+│ 2        ┆ 2025-01- ┆ 2025-01- ┆ 1        ┆ … ┆ 0.0      ┆ 0.0      ┆ 10       ┆ 0.0      │
+│          ┆ 01       ┆ 01       ┆          ┆   ┆          ┆          ┆          ┆          │
+│          ┆ 00:37:43 ┆ 00:37:53 ┆          ┆   ┆          ┆          ┆          ┆          │
+│ 2        ┆ 2025-01- ┆ 2025-01- ┆ 3        ┆ … ┆ 0.0      ┆ 0.0      ┆ 8        ┆ 0.0      │
+│          ┆ 01       ┆ 01       ┆          ┆   ┆          ┆          ┆          ┆          │
+│          ┆ 00:57:08 ┆ 00:57:16 ┆          ┆   ┆          ┆          ┆          ┆          │
+│ 1        ┆ 2025-01- ┆ 2025-01- ┆ 1        ┆ … ┆ 0.0      ┆ 0.0      ┆ 1910     ┆ 0.0      │
+│          ┆ 01       ┆ 01       ┆          ┆   ┆          ┆          ┆          ┆          │
+│          ┆ 00:27:40 ┆ 00:59:30 ┆          ┆   ┆          ┆          ┆          ┆          │
+│ 2        ┆ 2025-01- ┆ 2025-01- ┆ 4        ┆ … ┆ 0.0      ┆ 0.0      ┆ 5        ┆ 0.0      │
+│          ┆ 01       ┆ 01       ┆          ┆   ┆          ┆          ┆          ┆          │
+│          ┆ 00:56:49 ┆ 00:56:54 ┆          ┆   ┆          ┆          ┆          ┆          │
+│ 1        ┆ 2025-01- ┆ 2025-01- ┆ 0        ┆ … ┆ 0.0      ┆ 0.0      ┆ 2        ┆ 0.0      │
+│          ┆ 01       ┆ 01       ┆          ┆   ┆          ┆          ┆          ┆          │
+│          ┆ 00:42:42 ┆ 00:42:44 ┆          ┆   ┆          ┆          ┆          ┆          │
+│ …        ┆ …        ┆ …        ┆ …        ┆ … ┆ …        ┆ …        ┆ …        ┆ …        │
+│ 1        ┆ 2025-01- ┆ 2025-02- ┆ null     ┆ … ┆ null     ┆ 0.75     ┆ 266      ┆ 0.0      │
+│          ┆ 31       ┆ 01       ┆          ┆   ┆          ┆          ┆          ┆          │
+│          ┆ 23:59:17 ┆ 00:03:43 ┆          ┆   ┆          ┆          ┆          ┆          │
+│ 1        ┆ 2025-01- ┆ 2025-01- ┆ null     ┆ … ┆ null     ┆ 0.75     ┆ 1100     ┆ 0.0      │
+│          ┆ 31       ┆ 31       ┆          ┆   ┆          ┆          ┆          ┆          │
+│          ┆ 23:17:38 ┆ 23:35:58 ┆          ┆   ┆          ┆          ┆          ┆          │
+│ 2        ┆ 2025-01- ┆ 2025-01- ┆ null     ┆ … ┆ null     ┆ 0.0      ┆ 161      ┆ 0.0      │
+│          ┆ 31       ┆ 31       ┆          ┆   ┆          ┆          ┆          ┆          │
+│          ┆ 23:39:25 ┆ 23:42:06 ┆          ┆   ┆          ┆          ┆          ┆          │
+│ 1        ┆ 2025-01- ┆ 2025-01- ┆ null     ┆ … ┆ null     ┆ 0.75     ┆ 24       ┆ 0.0      │
+│          ┆ 31       ┆ 31       ┆          ┆   ┆          ┆          ┆          ┆          │
+│          ┆ 23:30:42 ┆ 23:31:06 ┆          ┆   ┆          ┆          ┆          ┆          │
+│ 1        ┆ 2025-01- ┆ 2025-01- ┆ null     ┆ … ┆ null     ┆ 0.75     ┆ 1556     ┆ 0.0      │
+│          ┆ 31       ┆ 31       ┆          ┆   ┆          ┆          ┆          ┆          │
+│          ┆ 23:10:25 ┆ 23:36:21 ┆          ┆   ┆          ┆          ┆          ┆          │
+└──────────┴──────────┴──────────┴──────────┴───┴──────────┴──────────┴──────────┴──────────┘
+```
+
+The `group_by` context behaves like its Pandas counterpart.
+
+## Exercises
+
+:::{exercise} Feature engineering: enriching the dataset
+We want to understand a bit more of the traffic in the city by creating
+new features (i.e. columns), in particular:
+
+- Split the pickup datetime into hour, minute, day of the week and month
+to indentify daily, weekly and monthly trends
+- Compute the average speed as an indicator of congestion (low speed ->
+traffic jam)
+- Stratify the trip distance and fare by zone to identify how expensive
+different zones are.
+Below is a skeleton of the code, where some lines have been blanked out
+for you to fill (marked with `TODO:...`)
+
+```python
+import polars as pl
+raw_df = pl.read_parquet('yellow_tripdata_2025-01.parquet')
+df = raw_df.with_columns([
+    pl.col("tpep_pickup_datetime").dt.hour().alias("pickup_hour"),
+    #TODO: do this for the minute
+    pl.col("tpep_pickup_datetime").dt.day_of_week().alias("pickup_dow"),   # Mon=0 … Sun=6
+    pl.col("tpep_pickup_datetime").dt.month().alias("pickup_month"),
+    # Trip duration in seconds
+    (pl.col("tpep_dropoff_datetime") - pl.col("tpep_pickup_datetime"))
+        .dt.total_seconds()
+        .alias("trip_duration_sec"),
+])
+
+# ------------------------------------------------------------
+# 4️⃣  Speed feature (mph)
+# ------------------------------------------------------------
+df = df.with_column(
+    #TODO: add expression for average velocity here
+    .replace_nan(None)                        # protect against div‑by‑zero
+    .alias("avg_speed_mph")
+)
+
+# ------------------------------------------------------------
+# 5️⃣  Zone‑level contextual aggregates
+# ------------------------------------------------------------
+# Compute per‑pickup‑zone statistics once
+zone_stats = (
+    df.groupby("PULocationID")
+      .agg([
+          pl.mean("fare_amount").alias("zone_avg_fare"),
+          #TODO: do the same for the trip distance here
+          pl.count().alias("zone_trip_cnt"),
+      ])
+      .rename({"PULocationID": "pickup_zone_id"})   # avoid name clash later
+)
+
+# Join those stats back onto the original rows
+df = df.join(zone_stats, left_on="PULocationID", right_on="pickup_zone_id", how="left")
+```
+
+While we haven't covered the `join` instruction earlier, its main role
+is to "spread" the `zone_stats` over all the rides in the original dataframe
+(i.e. write the `zone_avg_fare` on each ride in `df`).
 :::
 
 :::{solution}
-Solution text here
+
+```python
+import polars as pl
+raw_df = pl.read_parquet('yellow_tripdata_2025-01.parquet')
+df = raw_df.with_columns([
+    pl.col("tpep_pickup_datetime").dt.hour().alias("pickup_hour"),
+    pl.col("tpep_pickup_datetime").dt.minute().alias("pickup_minute"),
+    pl.col("tpep_pickup_datetime").dt.day_of_week().alias("pickup_dow"),   # Mon=0 … Sun=6
+    pl.col("tpep_pickup_datetime").dt.month().alias("pickup_month"),
+    # Trip duration in seconds
+    (pl.col("tpep_dropoff_datetime") - pl.col("tpep_pickup_datetime"))
+        .dt.seconds()
+        .alias("trip_duration_sec"),
+])
+
+# ------------------------------------------------------------
+# 4️⃣  Speed feature (mph)
+# ------------------------------------------------------------
+df = df.with_column(
+    (
+        pl.col("trip_distance") /
+        (pl.col("trip_duration_sec") / 3600)   # seconds → hours
+    )
+    .replace_nan(None)                        # protect against div‑by‑zero
+    .alias("avg_speed_mph")
+)
+
+# ------------------------------------------------------------
+# 5️⃣  Zone‑level contextual aggregates
+# ------------------------------------------------------------
+# Compute per‑pickup‑zone statistics once
+zone_stats = (
+    df.groupby("PULocationID")
+      .agg([
+          pl.mean("fare_amount").alias("zone_avg_fare"),
+          pl.mean("trip_distance").alias("zone_avg_dist"),
+          pl.count().alias("zone_trip_cnt"),
+      ])
+      .rename({"PULocationID": "pickup_zone_id"})   # avoid name clash later
+)
+
+# Join those stats back onto the original rows
+df = df.join(zone_stats, left_on="PULocationID", right_on="pickup_zone_id", how="left")
+```
+
+:::
+
+:::{exercise} More feature engineering!
+Similarly to the exercise above, define the following features in the data:
+
+- `pickup_hour` extracted from `tpep_pickup_time`
+- `is_weekend`, a Boolean value for each trip
+- `avg_speed_mph`, exactly as before
+- `tip_to_fare_ratio`, dividing the tip amount by the total fare. Be careful
+with division by 0
+- `fare_per_mile`, dividing the total fare by the distance
+- `dist_per_passenger`, the average distance travelled by each passenger
+(sum of all trip distances divided by number of trips)
+- `speed_per_pickup_area`, the average velocity stratified by pickup location
+- `dropoff_trip_count`, count of trips stratified per dropoff location
+:::
+
+:::{solution}
+
+```python
+import polars as pl
+raw_df = pl.read_parquet("yellow_tripdata_2025-01.parquet")
+df = raw_df.with_columns([
+    # 1. pickup_hour
+    pl.col("tpep_pickup_datetime").dt.hour().alias("pickup_hour"),
+
+    # 2. is_weekend (Sat=5, Sun=6)
+    pl.col("tpep_pickup_datetime")
+      .dt.day_of_week()
+      .is_in([5, 6])
+      .alias("is_weekend"),
+
+    # 3. trip_duration_sec
+    (pl.col("tpep_dropoff_datetime") - pl.col("tpep_pickup_datetime"))
+        .dt.seconds()
+        .alias("trip_duration_sec"),
+
+    # 4. avg_speed_mph
+    (
+        pl.col("trip_distance") /
+        (pl.col("trip_duration_sec") / 3600)
+    )
+    .replace_nan(None)                       # protect against div‑by‑zero
+    .alias("avg_speed_mph"),
+
+    # 5. tip_to_fare_ratio
+    (pl.col("tip_amount") / pl.col("fare_amount"))
+        .replace_inf(None)
+        .replace_nan(None)
+        .alias("tip_to_fare_ratio"),
+
+    # 6. fare_per_mile
+    (pl.col("fare_amount") / pl.col("trip_distance"))
+        .replace_inf(None)
+        .replace_nan(None)
+        .alias("fare_per_mile"),
+
+    # 7. dist_per_passenger
+    (pl.col("trip_distance") / pl.col("passenger_count"))
+        .replace_inf(None)
+        .replace_nan(None)
+        .alias("dist_per_passenger"),
+])
+
+# ------------------------------------------------------------
+# 4️⃣  Drop‑off‑zone contextual aggregates
+# ------------------------------------------------------------
+dropoff_stats = (
+    df.groupby("DOLocationID")
+      .agg([
+          pl.mean("avg_speed_mph").alias("dropoff_avg_speed"),
+          pl.count().alias("dropoff_trip_cnt"),
+      ])
+      .rename({"DOLocationID": "dropoff_zone_id"})   # avoid name clash later
+)
+
+# Join the per‑zone stats back onto every row
+df = df.join(dropoff_stats, left_on="DOLocationID", right_on="dropoff_zone_id", how="left")
+
+```
+
 :::
 
 ## Summary
@@ -521,8 +821,12 @@ hint of what comes next.
 
 ## See also
 
-- Other relevant links
-- Other link
+There is a lot more to Polars than what we covered in this short introduction.
+For example, queries like the ones we introduced can be performed lazily, i.e.
+just declared and then run all together, giving the backend a chance to
+optimise them. This can dramatically improve performance in the case of complex
+queries. For this and a lot more, we refer you to the official
+[documentation](https://docs.pola.rs/).
 
 :::{keypoints}
 
