@@ -454,9 +454,34 @@ The `group_by` statement is used to stratify by hour and payment type,
 followed by an aggregated sum of the `fare_amount` column and a sort.
 Notice how the syntax has more of a functional programming flavour to it
 (`pl.col`, `pl.sum` as pure functions). This will be clarified further in
-the next section.
+the next section. Also note that Polars by default spreads the workload
+over multiple threads.
 
-## Unlocking the true potential of polars
+:::
+
+::::
+
+## Idiomatic Polars
+
+Polars introduces a few variations to dataset operations compared to the
+traditional Pandas approach. In particular, a domain-specific language
+(DSL) was developed, where *expressions* are written to represent dataset
+operations and *context*s provide the environment where they produce a
+result.
+
+### Expressions
+
+Let's say that we created a `trip_duration_sec` column in our NYC cab database
+and, given the `trip_distance` column, we want to compute the average speed.
+In Polars, this can be achieved with:
+
+```python
+pl.col('trip_distance') / pl.col(`trip_duration_sec`)
+```
+
+This is a lazy representation of an operation we want to perform, which can
+be further manipulated or just printed. For it to actually produce data, a
+*context* is needed.
 
 :::{discussion}
 Discuss the following.
