@@ -51,8 +51,8 @@ This course focuses on high performance data analytics (HPDA). The data
 can come from simulations or experiments (or just generally available
 datasets), and the goal is to pre-process, analyse and visualise it.
 The lesson introduces some of the modern Python stack for data analytics,
-dealing with packages such as Numpy, Xarray, Pandas, Polars, multithreading
-and Dask, as well as Dask for large-scale data visualisations.
+dealing with packages such as Pandas, Polars, multithreading
+and Dask, as well as Streamlit for large-scale data visualisations.
 
 ## Learning outcomes
 
