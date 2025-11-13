@@ -142,12 +142,18 @@ We can get a first understanding of the contents of a dataframe by printing
 the first few lines, the "schema" (i.e. the number and type of each column)
 and summary statistics as follows:
 
-::::{tabs}
+:::::{tabs}
 
-:::{group-tab} Pandas
+::::{group-tab} Pandas
 
 ```python
 df.head()
+```
+
+:::{exercise} Output
+:class: dropdown
+
+```
    VendorID tpep_pickup_datetime tpep_dropoff_datetime  ...  congestion_surcharge  Airport_fee  cbd_congestion_fee
 0         1  2025-01-01 00:18:38   2025-01-01 00:26:59  ...                   2.5          0.0                 0.0
 1         1  2025-01-01 00:32:40   2025-01-01 00:35:13  ...                   2.5          0.0                 0.0
@@ -156,8 +162,16 @@ df.head()
 4         2  2025-01-01 00:21:34   2025-01-01 00:25:06  ...                   0.0          0.0                 0.0
 ```
 
+:::
+
 ```python
 df.info()
+```
+
+:::{exercise} Output
+:class: dropdown
+
+```
 RangeIndex: 3475226 entries, 0 to 3475225
 Data columns (total 20 columns):
  #   Column                 Dtype
@@ -186,8 +200,16 @@ dtypes: datetime64[us](2), float64(13), int32(3), int64(1), object(1)
 memory usage: 490.5+ MB
 ```
 
+:::
+
 ```python
 df.describe()
+```
+
+:::{exercise} Output
+:class: dropdown
+
+```
            VendorID        tpep_pickup_datetime       tpep_dropoff_datetime  ...  congestion_surcharge   Airport_fee  cbd_congestion_fee
 count  3.475226e+06                     3475226                     3475226  ...          2.935077e+06  2.935077e+06        3.475226e+06
 mean   1.785428e+00  2025-01-17 11:02:55.910964  2025-01-17 11:17:56.997901  ...          2.225237e+00  1.239111e-01        4.834093e-01
@@ -202,8 +224,16 @@ std    4.263282e-01                         NaN                         NaN  ...
 ```
 
 :::
+::::
 
-:::{group-tab} Polars
+::::{group-tab} Polars
+
+```python
+df.head()
+```
+
+:::{exercise} Output
+:class: dropdown
 
 ```python
 shape: (5, 20)
@@ -226,8 +256,16 @@ shape: (5, 20)
 └──────────┴──────────────────┴──────────────────┴─────────────────┴───┴──────────────┴──────────────────┴─────────────┴─────────────────┘
 ```
 
+:::
+
 ```python
 df.describe()
+```
+
+:::{exercise} Output
+:class: dropdown
+
+```
 shape: (9, 21)
 ┌────────────┬────────────┬──────────────────┬─────────────────┬───┬──────────────┬─────────────────┬─────────────┬─────────────────┐
 │ statistic  ┆ VendorID   ┆ tpep_pickup_date ┆ tpep_dropoff_da ┆ … ┆ total_amount ┆ congestion_surc ┆ Airport_fee ┆ cbd_congestion_ │
@@ -257,17 +295,25 @@ shape: (9, 21)
 
 ::::
 
+:::::
+
 ### Indexing
 
 We can index data in the dataframe as follows:
 
-::::{tabs}
+:::::{tabs}
 
-:::{group-tab} Pandas
+::::{group-tab} Pandas
 
 ```python
 # With this we can select a column
 df['VendorID'] # Could also be df.VendorID 
+```
+
+:::{exercise} Output
+:class: dropdown
+
+```
 0          1
 1          1
 2          1
@@ -281,9 +327,17 @@ df['VendorID'] # Could also be df.VendorID
 3475225    2
 ```
 
+:::
+
 ```python
 # Get a row 
 df.iloc[1000,:]
+```
+
+:::{exercise} Output
+:class: dropdown
+
+```
 VendorID                                   2
 tpep_pickup_datetime     2025-01-01 00:08:06
 tpep_dropoff_datetime    2025-01-01 00:16:20
@@ -330,10 +384,19 @@ cbd_congestion_fee                       0.0
 
 :::
 
-:::{group-tab} Polars
+::::
+
+::::{group-tab} Polars
 
 ```python
 df["VendorID"] # A more Polars-y idiom is to use df.select(["VendorID"])
+```
+
+:::{exercise} Output
+
+:class: dropdown
+
+```
 shape: (3_475_226,)
 Series: 'VendorID' [i32]
 [
@@ -351,8 +414,16 @@ Series: 'VendorID' [i32]
 ]
 ```
 
+:::
+
 ```python
 df[1000][:]
+```
+
+:::{exercise} Output
+:class: dropdown
+
+```
 ┌──────────┬─────────────┬─────────────┬────────────┬───┬────────────┬────────────┬────────────┬────────────┐
 │ VendorID ┆ tpep_pickup ┆ tpep_dropof ┆ passenger_ ┆ … ┆ total_amou ┆ congestion ┆ Airport_fe ┆ cbd_conges │
 │ ---      ┆ _datetime   ┆ f_datetime  ┆ count      ┆   ┆ nt         ┆ _surcharge ┆ e          ┆ tion_fee   │
@@ -366,7 +437,9 @@ df[1000][:]
 ```
 
 :::
+
 ::::
+:::::
 
 In both cases, a similar syntax can be used to do in-place modification (e.g. `df[row][column]=...`).
 Please note that this kind of replacement carries a big performance penalty,
@@ -389,9 +462,9 @@ This is type of workflow is represented below.
 As an example, let us try to to compute the total fare for each hour, split
 by payment type.
 
-::::{tabs}
+:::::{tabs}
 
-:::{group-tab} Pandas
+::::{group-tab} Pandas
 
 ```python
 #First let us extract the hour from the tpep_pickup_datetime column 
@@ -403,6 +476,12 @@ hourly_fare = (
   .reset_index()
   .sort_values(['hour', 'payment_type'])
 )
+```
+
+:::{exercise} Output
+:class: dropdown
+
+```
      hour  payment_type  fare_amount
 0       0             0    352227.86
 1       0             1   1088201.12
@@ -417,13 +496,15 @@ hourly_fare = (
 120    23             4      3293.61
 ```
 
+:::
+
 The `groupby` statement is used to stratify the `fare_amount` column by
 hour and payment type. Then the amounts per hour and type get summed and
 sorted according to time and payment type.
 
-:::
+::::
 
-:::{group-tab} Polars
+::::{group-tab} Polars
 
 ```python
 #First, let us extract the hour from the tpep_pickup_datetime column 
@@ -434,6 +515,12 @@ hourly_fare = (
     .agg(pl.sum('fare_amount').alias('total_fare'))
     .sort(['hour', 'payment_type'])
 )
+```
+
+:::{exercise} Output
+:class: dropdown
+
+```
 ┌──────┬──────────────┬────────────┐
 │ hour ┆ payment_type ┆ total_fare │
 │ ---  ┆ ---          ┆ ---        │
@@ -453,6 +540,8 @@ hourly_fare = (
 └──────┴──────────────┴────────────┘
 ```
 
+:::
+
 The `group_by` statement is used to stratify by hour and payment type,
 followed by an aggregated sum of the `fare_amount` column and a sort.
 Notice how the syntax has more of a functional programming flavour to it
@@ -460,9 +549,9 @@ Notice how the syntax has more of a functional programming flavour to it
 the next section. Also note that Polars by default spreads the workload
 over multiple threads.
 
-:::
-
 ::::
+
+:::::
 
 ## Idiomatic Polars
 
@@ -671,11 +760,9 @@ operations can be found [here](https://docs.pola.rs/user-guide/transformations/j
 
 ## Exercises
 
-:::{exercise} Joining geographical data
+::::{exercise} Joining geographical data
 We have already seen how to add actual latitude and longitude for the pickups.
 Now do the same for the drop-offs!
-
-:::
 
 :::{solution}
 
@@ -686,7 +773,9 @@ df = df.join(lookup_df, left_on='DOLocationID', right_on='LocationID', how='left
 
 :::
 
-:::{exercise} Feature engineering: enriching the dataset
+::::
+
+::::{exercise} Feature engineering: enriching the dataset
 We want to understand a bit more of the traffic in the city by creating
 new features (i.e. columns), in particular:
 
@@ -739,7 +828,6 @@ is to "spread" the `zone_stats` over all the rides in the original dataframe
 (i.e. write the `zone_avg_fare` on each ride in `df`). `join` has its roots
 in relational databases, where different tables can be merged based on a
 common column.
-:::
 
 :::{solution}
 
@@ -782,8 +870,9 @@ df = df.join(zone_stats, left_on="PULocationID", right_on="pickup_zone_id", how=
 ```
 
 :::
+::::
 
-:::{exercise} More feature engineering!
+::::{exercise} More feature engineering!
 Similarly to the exercise above, define the following features in the data:
 
 - `pickup_hour` extracted from `tpep_pickup_time`
@@ -796,7 +885,6 @@ with division by 0
 (sum of all trip distances divided by number of trips)
 - `speed_per_pickup_area`, the average velocity stratified by pickup location
 - `dropoff_trip_count`, count of trips stratified per dropoff location
-:::
 
 :::{solution}
 
@@ -860,11 +948,23 @@ df = df.join(dropoff_stats, left_on="DOLocationID", right_on="dropoff_zone_id", 
 ```
 
 :::
+::::
 
 ## Summary
 
-A Summary of what you learned and why it might be useful.  Maybe a
-hint of what comes next.
+We have seen how to deal with common workflows in both Pandas and Polars,
+starting from basic tasks like opening a dataset and inspecting it to performing
+split-apply-combine pipelines. We have seen how to use Polars to manipulate
+datasets and perform some basic feature engineering.
+
+:::{keypoints}
+
+- Dataframes are combinations of series
+- Both Pandas and Polars can be used to manipulate them
+- The expression API in Polars allows to perform advanced operations with a
+simple DSL.
+
+:::
 
 ## See also
 
@@ -874,13 +974,3 @@ just declared and then run all together, giving the backend a chance to
 optimise them. This can dramatically improve performance in the case of complex
 queries. For this and a lot more, we refer you to the official
 [documentation](https://docs.pola.rs/).
-
-:::{keypoints}
-
-- What the learner should take away
-- point 2
-- ...
-
-This is another holdover from the carpentries style.  This perhaps
-is better done in a "summary" section.
-:::
