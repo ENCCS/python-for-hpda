@@ -1,6 +1,7 @@
-# Episode template
+# Multithreading
 
 :::{questions}
+
 - What syntax is used to make a lesson?
 - How do you structure a lesson effectively for teaching?
 - `questions` are at the top of a lesson and provide a starting
@@ -8,6 +9,7 @@
 :::
 
 :::{objectives}
+
 - Show a complete lesson page with all of the most common
   structures.
 - ...
@@ -16,20 +18,14 @@ This is also a holdover from the carpentries-style.  It could
 usually be left off.
 :::
 
-
-
-
 The introduction should be a high level overview of what is on the
 page and why it is interesting.
-
 
 The lines below (only in the source) will set the default highlighting
 language for the entire page.
 
 :::{highlight} python
 :::
-
-
 
 ## Section
 
@@ -42,8 +38,6 @@ Discuss the following.
 - Another discussion topic
 :::
 
-
-
 ## Section
 
 ```
@@ -55,8 +49,6 @@ print("hello world")
 print("hello world)
 ```
 
-
-
 ## Exercises: description
 
 :::{exercise} Exercise Topic-1: imperative description of exercise
@@ -67,23 +59,18 @@ Exercise text here.
 Solution text here
 :::
 
-
-
 ## Summary
 
 A Summary of what you learned and why it might be useful.  Maybe a
 hint of what comes next.
-
-
 
 ## See also
 
 - Other relevant links
 - Other link
 
-
-
 :::{keypoints}
+
 - What the learner should take away
 - point 2
 - ...

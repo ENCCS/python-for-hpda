@@ -20,9 +20,9 @@
 tabular-data
 interfacing-with-storage
 visualisation
+benchmarking
 multithreading
 dask
-episode
 
 ```
 
