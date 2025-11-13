@@ -529,7 +529,7 @@ shape: (3_475_226, 1)
 ```
 
 ```python
-df.with_columns((pl.col('trip_distance')/pl.col('trip_duration_sec')*3600).alias("avg_sp\
+df.with_columns((pl.col('trip_distance')/pl.col('trip_duration_sec')*3600).alias("avg_sp
 eed_mph"))
 shape: (3_475_226, 22)
 ┌──────────┬──────────┬──────────┬──────────┬───┬──────────┬──────────┬──────────┬──────────┐
@@ -624,7 +624,67 @@ shape: (104_410, 22)
 
 The `group_by` context behaves like its Pandas counterpart.
 
+### Transformations
+
+A `join` operation combines columns from one or more dataframes into a new
+dataframe. There are different joining strategies, which influence how columns
+are combined and what rows are included in the final set. A common type is the
+*equi* join, where rows are matched by a key expression. Let us clarify this
+with an example. The `df` dataframe does not include specific coordinates for
+each pickup and drop-off, rather only a `PULocationID` and a `DOLocationID`.
+There is a `taxy_zones_xy.csv` file that contains, for each `LocationID`, the
+latitude (X) and longitude (Y) of each location, as well as the name of zone
+and borough:
+
+```python
+
+lookup_df = pl.read_csv('taxy_zones_xy.csv', has_header=True)
+lookup_df.head()
+┌────────────┬────────────┬───────────┬─────────────────────────┬───────────────┐
+│ LocationID ┆ X          ┆ Y         ┆ zone                    ┆ borough       │
+│ ---        ┆ ---        ┆ ---       ┆ ---                     ┆ ---           │
+│ i64        ┆ f64        ┆ f64       ┆ str                     ┆ str           │
+╞════════════╪════════════╪═══════════╪═════════════════════════╪═══════════════╡
+│ 1          ┆ -74.176786 ┆ 40.689516 ┆ Newark Airport          ┆ EWR           │
+│ 2          ┆ -73.826126 ┆ 40.625724 ┆ Jamaica Bay             ┆ Queens        │
+│ 3          ┆ -73.849479 ┆ 40.865888 ┆ Allerton/Pelham Gardens ┆ Bronx         │
+│ 4          ┆ -73.977023 ┆ 40.724152 ┆ Alphabet City           ┆ Manhattan     │
+│ 5          ┆ -74.18993  ┆ 40.55034  ┆ Arden Heights           ┆ Staten Island │
+└────────────┴────────────┴───────────┴─────────────────────────┴───────────────┘
+```
+
+This can be used to append these columns to the original df to have some form
+of geographical data as follows (e.g. for the `PULocationID`):
+
+```python
+df = df.join(lookup_df, left_on='PULocationID', right_on='LocationID', how='left'
+, suffix='_pickup')
+```
+
+In the line above, `left_on` is used to indicate the *key* in the original
+dataframe, `right_on` is used to specify the *key* in the `lookup_df` dataframe,
+`how=left` means that the columns from the second dataframe will be added to
+the first (and not the other way around) and `suffix` is what will be added to
+the names of the joined columns (i.e., df will contain columns called `X_pickup`,
+`Y_pickup`, `zone_pickup` and `borough_pickup`). More information on join
+operations can be found [here](https://docs.pola.rs/user-guide/transformations/joins/).
+
 ## Exercises
+
+:::{exercise} Joining geographical data
+We have already seen how to add actual latitude and longitude for the pickups.
+Now do the same for the drop-offs!
+
+:::
+
+:::{solution}
+
+```python
+df = df.join(lookup_df, left_on='DOLocationID', right_on='LocationID', how='left'
+, suffix='_dropoff')
+```
+
+:::
 
 :::{exercise} Feature engineering: enriching the dataset
 We want to understand a bit more of the traffic in the city by creating
@@ -653,18 +713,12 @@ df = raw_df.with_columns([
         .alias("trip_duration_sec"),
 ])
 
-# ------------------------------------------------------------
-# 4️⃣  Speed feature (mph)
-# ------------------------------------------------------------
 df = df.with_column(
     #TODO: add expression for average velocity here
     .replace_nan(None)                        # protect against div‑by‑zero
     .alias("avg_speed_mph")
 )
 
-# ------------------------------------------------------------
-# 5️⃣  Zone‑level contextual aggregates
-# ------------------------------------------------------------
 # Compute per‑pickup‑zone statistics once
 zone_stats = (
     df.groupby("PULocationID")
@@ -682,7 +736,9 @@ df = df.join(zone_stats, left_on="PULocationID", right_on="pickup_zone_id", how=
 
 While we haven't covered the `join` instruction earlier, its main role
 is to "spread" the `zone_stats` over all the rides in the original dataframe
-(i.e. write the `zone_avg_fare` on each ride in `df`).
+(i.e. write the `zone_avg_fare` on each ride in `df`). `join` has its roots
+in relational databases, where different tables can be merged based on a
+common column.
 :::
 
 :::{solution}
@@ -701,9 +757,6 @@ df = raw_df.with_columns([
         .alias("trip_duration_sec"),
 ])
 
-# ------------------------------------------------------------
-# 4️⃣  Speed feature (mph)
-# ------------------------------------------------------------
 df = df.with_column(
     (
         pl.col("trip_distance") /
@@ -713,9 +766,6 @@ df = df.with_column(
     .alias("avg_speed_mph")
 )
 
-# ------------------------------------------------------------
-# 5️⃣  Zone‑level contextual aggregates
-# ------------------------------------------------------------
 # Compute per‑pickup‑zone statistics once
 zone_stats = (
     df.groupby("PULocationID")
@@ -795,9 +845,6 @@ df = raw_df.with_columns([
         .alias("dist_per_passenger"),
 ])
 
-# ------------------------------------------------------------
-# 4️⃣  Drop‑off‑zone contextual aggregates
-# ------------------------------------------------------------
 dropoff_stats = (
     df.groupby("DOLocationID")
       .agg([

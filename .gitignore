@@ -4,3 +4,4 @@
 .jupyter_cache
 jupyter_execute
 uv.lock
+nyc_yellow_taxi_2025-01.parquet
