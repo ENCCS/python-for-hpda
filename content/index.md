@@ -4,6 +4,8 @@
 
 - Basic proficiency in Python (variables, flow control, functions)
 - Basic grasp of descriptive statistics
+- Basic knowledge of NumPy
+- Basic knowledge of some plotting package (Matplotlib, Seaborn, Holoviz...)
   :::
 
 ```{csv-table}
