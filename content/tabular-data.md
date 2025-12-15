@@ -12,7 +12,6 @@
 
 - Learn how to manipulate dataframes in Pandas
 - Lazy and eager dataframes in Polars
-- Learn how to abstract the underlying libraries away with Narwhals
 
 :::
 
@@ -393,7 +392,6 @@ df["VendorID"] # A more Polars-y idiom is to use df.select(["VendorID"])
 ```
 
 :::{exercise} Output
-
 :class: dropdown
 
 ```
@@ -457,7 +455,12 @@ workflow, where the following happens:
 - Combining: assembling a dataframe (of potentially any size) with the results.
 
 This is type of workflow is represented below.
+
+:::{figure-md}
 ![split-apply-combine](groupby.png)
+
+Source: [Earth and environmental data science](https://earth-env-data-science.github.io/intro.html)
+:::
 
 As an example, let us try to to compute the total fare for each hour, split
 by payment type.
