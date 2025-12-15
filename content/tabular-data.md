@@ -87,6 +87,24 @@ When it comes to data analysis using Pandas, the tidy format is recommended:
 allows for vectorized calculations which are much faster.
 - It’s easier to filter, group, join and aggregate the data.
 
+Imagine, for example, that you would like to compute the speed as
+`speed=distance/time`. The untidy format would make this much clunkier, as:
+
+- The distances are encoded as column names, not as data points (rows)
+- The speed would have to be stored in a new dataframe since it would not
+fit in that data structure.
+
+In comparison, in a tidy dataframe, this computation would be a simple
+operation between two columns.
+
+:::{tip}
+
+Recovering a wide dataframe from a tidy one is commonly referred to as
+*pivoting*. Most dataframe libraries provide a `pivot()` or
+`pivot_table` function.
+
+:::
+
 ## Pandas & Polars
 
 Historically, [Pandas](https://pandas.pydata.org/) has been the go-to package
@@ -446,9 +464,11 @@ commonly achieved through the [expression API](https://docs.pola.rs/user-guide/c
 
 ### Common workflows
 
-It is quite common to compute stratified statistics of different groups to
-produce descriptive statistics. This is commonly achieved through a `group-by`
-workflow, where the following happens:
+It is quite common to stratify (i.e. divide the samples into a number of groups
+based on categorical variables) to produce descriptive statistics (i.e.
+statistics that provide a summary of the samples and do not aim to predict
+anything regarding the population it comes from). This is commonly achieved
+through a `group-by` workflow, where the following happens:
 
 - Splitting: data is partitioned into different groups based on some criterion
 - Applying: applying a function/performing a calculation to each group

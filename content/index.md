@@ -3,7 +3,7 @@
 :::{prereq}
 
 - Basic proficiency in Python (variables, flow control, functions)
-- Basic grasp of descriptive statistics
+- Basic grasp of descriptive statistics (such as minimum, maximum, median, arithmetic mean...)
 - Basic knowledge of NumPy
 - Basic knowledge of some plotting package (Matplotlib, Seaborn, Holoviz...)
   :::
@@ -79,7 +79,16 @@ Specifically, this lesson covers:
 :class: warning
 
 Don't forget to check out additional course materials from the
-[Data carpentry](https://datacarpentry.org/lessons/).
+[Data carpentry](https://datacarpentry.org/lessons/), such as:
+
+- [Data Analysis and Visualization in Python for Ecologists](https://datacarpentry.github.io/python-ecology-lesson/)
+- [10 minutes to pandas](https://pandas.pydata.org/pandas-docs/version/1.3/user_guide/10min.html#minutes-to-pandas)
+- [Modern Pandas (blog series by Tom Augspurger)](https://tomaugspurger.net/posts/modern-1-intro/)
+
+Moreover, the Polars [documentation](https://docs.pola.rs/) and
+[Awesome data science with Python](https://github.com/r0f1/datascience)
+are valuable resources, as well as
+[PythonSpeed](https://pythonspeed.com/datascience/#pandas).
 
 :::
 
