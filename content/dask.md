@@ -2,21 +2,18 @@
 
 # Dask for Scalable Analytics
 
-```{eval-rst}
-.. objectives::
+:::{objectives}
 
-   - Understand how Dask achieves parallelism
-   - Learn a few common workflows with Dask
-   - Understand lazy execution
-```
+- Understand how Dask achieves parallelism
+- Learn a few common workflows with Dask
+- Understand lazy execution
 
-```{eval-rst}
-.. instructor-note::
+:::{instructor-note}
 
-   - 40 min teaching/type-along
-   - 40 min exercises
+- 40 min teaching/type-along
+- 40 min exercises
 
-```
+:::
 
 ## Overview
 
@@ -66,10 +63,9 @@ CPU and RAM and the Dask scheduling system automatically maps jobs to each worke
 
 Dask provides four different schedulers:
 
-```{eval-rst}
-.. csv-table::
-   :widths: auto
-   :delim: ;
+```{csv-table}
+:widths: auto
+:delim: ;
 
    Type ; Multi-node ; Description
    ``threads`` ; No ; A single-machine scheduler backed by a thread pool
@@ -83,76 +79,70 @@ Here we will focus on using a `LocalCluster`, and it is recommended to use
 a distributed scheduler `dask.distributed`. It is more sophisticated, offers more features,
 but requires minimum effort to set up. It can run locally on a laptop and scale up to a cluster.
 
-```{eval-rst}
-.. callout:: Alternative 1: Initializing a Dask ``LocalCluster`` via JupyterLab
-   :class: dropdown
+:::{callout} Alternative 1: Initializing a Dask ``LocalCluster`` via JupyterLab
+:class: dropdown
 
-   This makes use of the ``dask-labextension`` which is pre-installed in our conda environment.
+This makes use of the ``dask-labextension`` which is pre-installed in our conda environment.
 
-   #. Start New Dask Cluster from the sidebar and by clicking on ``+ NEW`` button.
-   #. Click on the ``< >`` button to inject the client code into a notebook cell. Execute it.
+1. Start New Dask Cluster from the sidebar and by clicking on ``+ NEW`` button.
+2. Click on the ``< >`` button to inject the client code into a notebook cell. Execute it.
 
+   ![](img/jlab-dask-1.png) ![](img/jlab-dask-2.png)
 
-   |dask-1| |dask-2|
+3. You can scale the cluster for more resources or launch the dashboard.
+![](img/jlab-dask-3.png)
+:::
 
-   3. You can scale the cluster for more resources or launch the dashboard.
+:::::{callout} Alternative 2: Manual `LocalCluster`
 
-   |dask-3|
+We can also start a `LocalCluster` scheduler manually, which can use all
+available resources or just a subset.
 
-   .. |dask-1| image:: ./img/jlab-dask-1.png
-      :width: 49%
+::::{tabs}
 
-   .. |dask-2| image:: ./img/jlab-dask-2.png
-      :width: 49%
+:::{group-tab} All resources
 
-   .. |dask-3| image:: ./img/jlab-dask-3.png
-      :width: 100%
+We can use all the cores and RAM we have on the machine by:
+
+```python
+from dask.distributed import Client, LocalCluster
+# create a local cluster
+cluster = LocalCluster()
+# connect to the cluster we just created
+client = Client(cluster)
+client
 ```
 
-**Alternative 2**: We can also start a `LocalCluster` scheduler manually, which makes use of:
+Or you can simply launch a `Client()` call which is shorthand for what is
+described above.
 
-```{eval-rst}
-.. tabs::
-
-   .. tab:: all resources
-
-      all the cores and RAM we have on the machine by:
-
-      .. code-block:: python
-
-         from dask.distributed import Client, LocalCluster
-         # create a local cluster
-         cluster = LocalCluster()
-         # connect to the cluster we just created
-         client = Client(cluster)
-         client
-
-
-      Or you can simply lauch a Client() call which is shorthand for what is described above.
-
-      .. code-block:: python
-
-         from dask.distributed import Client
-         client = Client() # same as Client(processes=True)
-         client
-
-   .. tab:: specified resources
-
-      which limits the compute resources available as follows:
-
-      .. code-block:: python
-
-         from dask.distributed import Client, LocalCluster
-
-         cluster = LocalCluster(
-            n_workers=4,
-            threads_per_worker=1,
-            memory_limit='4GiB'  # memory limit per worker
-         )
-         client = Client(cluster)
-         client
-
+```python
+from dask.distributed import Client
+client = Client() # same as Client(processes=True)
+client
 ```
+
+:::
+
+:::{group-tab} Specified resources
+
+This option limits the compute resources available as follows:
+
+```python
+from dask.distributed import Client, LocalCluster
+
+cluster = LocalCluster(
+  n_workers=4,
+  threads_per_worker=1,
+  memory_limit='4GiB'  # memory limit per worker
+)
+client = Client(cluster)
+client
+```
+
+:::
+::::
+:::::
 
 :::{note}
 When setting up the cluster, one should consider the balance between the number of workers
@@ -207,8 +197,7 @@ However, a Dask array uses the so-called "lazy" execution mode,
 which allows one to build up complex, large calculations symbolically
 before turning them over the scheduler for execution.
 
-```{eval-rst}
-.. callout:: Lazy evaluation
+:::{callout} Lazy evaluation
 
    Contrary to normal computation, lazy execution mode is when all the computations
    needed to generate results are symbolically represented, forming a queue of
@@ -219,7 +208,7 @@ before turning them over the scheduler for execution.
    or thread pool, which allows Dask to take full advantage of multiple processors
    available on the computers.
 
-```
+:::
 
 ```python
 import numpy as np
@@ -251,8 +240,9 @@ ones
 ```
 
 :::{note}
-In this course, we will use a chunk shape, but other ways to specify `chunks` size can be found here
-<https://docs.dask.org/en/stable/array-chunks.html#specifying-chunk-shapes>
+In this course, we will use a chunk shape, but other ways to specify `chunks`
+size can be found
+[here](<https://docs.dask.org/en/stable/array-chunks.html#specifying-chunk-shapes>).
 :::
 
 Let us further calculate the sum of the dask array:
@@ -278,8 +268,7 @@ dask.compute(sum_da)
 sum_da.compute()
 ```
 
-You can find additional details and examples here
-<https://examples.dask.org/array.html>.
+You can find additional details and examples [here](https://examples.dask.org/array.html).
 
 ### Dask dataframe
 
@@ -309,7 +298,7 @@ ddf = dd.from_pandas(df, npartitions=10)
 Alternatively you can directly read into a Dask dataframe, whilst also modifying
 how the dataframe is partitioned in terms of `blocksize`:
 
-```
+```python
 # blocksize=None which means a single chunk is used
 df = dd.read_csv(url,blocksize=None).set_index('Name')
 ddf= df.repartition(npartitions=10)
@@ -354,88 +343,92 @@ specifically the step where we count words in a text.
 
 (word-count-problem)=
 
-```{eval-rst}
-.. demo:: Demo: Dask version of word-count
+:::{demo} Demo: Dask version of word-count
 
-   If you have not already cloned or downloaded ``word-count-hpda`` repository,
-   `get it from here <https://github.com/ENCCS/word-count-hpda>`__.
-   Then, navigate to the ``word-count-hpda`` directory. The serial version (wrapped in
-   multiple functions in the ``source/wordcount.py`` code) looks like this:
+If you have not already cloned or downloaded ``word-count-hpda`` repository,
+[get it from here](https://github.com/ENCCS/word-count-hpda).
+Then, navigate to the ``word-count-hpda`` directory. The serial version (wrapped in
+multiple functions in the ``source/wordcount.py`` code) looks like this:
 
-   .. code-block:: python
+```python
 
-      filename = './data/pg10.txt'
-      DELIMITERS = ". , ; : ? $ @ ^ < > # % ` ! * - = ( ) [ ] { } / \" '".split()
+filename = './data/pg10.txt'
+DELIMITERS = ". , ; : ? $ @ ^ < > # % ` ! * - = ( ) [ ] { } / \" '".split()
 
-      with open(filename, "r") as input_fd:
-          lines = input_fd.read().splitlines()
+with open(filename, "r") as input_fd:
+    lines = input_fd.read().splitlines()
 
-      counts = {}
-      for line in lines:
-          for purge in DELIMITERS:
-              line = line.replace(purge, " ")
-          words = line.split()
-          for word in words:
-              word = word.lower().strip()
-              if word in counts:
-                  counts[word] += 1
-              else:
-                  counts[word] = 1
+counts = {}
+for line in lines:
+    for purge in DELIMITERS:
+        line = line.replace(purge, " ")
+    words = line.split()
+    for word in words:
+        word = word.lower().strip()
+        if word in counts:
+            counts[word] += 1
+        else:
+            counts[word] = 1
 
-      sorted_counts = sorted(
-         list(counts.items()),
-         key=lambda key_value: key_value[1],
-         reverse=True
-      )
+sorted_counts = sorted(
+    list(counts.items()),
+    key=lambda key_value: key_value[1],
+    reverse=True
+)
 
-      sorted_counts[:10]
+sorted_counts[:10]
+
+  ```
 
    A very compact ``dask.bag`` version of this code is as follows:
 
-   .. code-block:: python
+```python
 
-      import dask.bag as db
-      filename = './data/pg10.txt'
-      DELIMITERS = ". , ; : ? $ @ ^ < > # % ` ! * - = ( ) [ ] { } / \" '".split()
+import dask.bag as db
+filename = './data/pg10.txt'
+DELIMITERS = ". , ; : ? $ @ ^ < > # % ` ! * - = ( ) [ ] { } / \" '".split()
 
-      text = db.read_text(filename, blocksize='1MiB')
-      sorted_counts = (
-         text
-         .filter(lambda word: word not in DELIMITERS)
-         .str.lower()
-         .str.strip()
-         .str.split()
-         .flatten()
-         .frequencies().topk(10,key=1)
-         .compute()
-      )
+text = db.read_text(filename, blocksize='1MiB')
+sorted_counts = (
+    text
+    .filter(lambda word: word not in DELIMITERS)
+    .str.lower()
+    .str.strip()
+    .str.split()
+    .flatten()
+    .frequencies().topk(10,key=1)
+    .compute()
+)
 
-      sorted_counts
-
-   The last two steps of the pipeline could also have been done with a dataframe:
-
-   .. code-block:: python
-      :emphasize-lines: 9-10
-
-      filtered = (
-         text
-         .filter(lambda word: word not in DELIMITERS)
-         .str.lower()
-         .str.strip()
-         .str.split()
-         .flatten()
-      )
-      ddf = filtered.to_dataframe(columns=['words'])
-      ddf['words'].value_counts().compute()[:10]
+sorted_counts
 ```
 
-```{eval-rst}
-.. callout:: When to use Dask
+The last two steps of the pipeline could also have been done with a dataframe:
+
+```python
+  :emphasize-lines: 9-10
+
+  filtered = (
+      text
+      .filter(lambda word: word not in DELIMITERS)
+      .str.lower()
+      .str.strip()
+      .str.split()
+      .flatten()
+  )
+  ddf = filtered.to_dataframe(columns=['words'])
+  ddf['words'].value_counts().compute()[:10]
+```
+
+:::
+
+:::{callout} When to use Dask
 
    There is no benefit from using Dask on small datasets. But imagine we were
    analysing a very large text file (all tweets in a year? a genome?). Dask provides
    both parallelisation and the ability to utilize RAM on multiple machines.
-```
+
+:::
 
 ## Exercise set 1
 
@@ -444,132 +437,136 @@ Choose an exercise with the data structure that you are most interested in:
 
 (ex-dask-array)=
 
-### 1.1. using dask.array
+### 1.1. Using dask.array
 
-```{eval-rst}
-.. challenge:: Chunk size
+:::::{challenge} Chunk size
 
-   The following example calculate the mean value of a random generated array.
-   Run the example and see the performance improvement by using dask.
+The following example calculate the mean value of a random generated array.
+Run the example and see the performance improvement by using dask.
 
-   .. tabs::
+::::{tabs}
 
-      .. tab:: NumPy
+:::{group-tab} NumPy
 
-         .. literalinclude:: example/chunk_np.py
-            :language: python
-
-      .. tab:: Dask
-
-         .. literalinclude:: example/chunk_dask.py
-            :language: python
-
-
-   But what happens if we use different chunk sizes?
-   Try out with different chunk sizes:
-
-   - What happens if the dask chunks=(20000,20000)
-
-   - What happens if the dask chunks=(250,250)
-
-
-   .. solution:: Choice of chunk size
-
-      The choice is problem dependent, but here are a few things to consider:
-
-      Each chunk of data should be small enough so that it fits comforably in each worker's available memory.
-      Chunk sizes between 10MB-1GB are common, depending on the availability of RAM. Dask will likely
-      manipulate as many chunks in parallel on one machine as you have cores on that machine.
-      So if you have a machine with 10 cores and you choose chunks in the 1GB range, Dask is likely to use at least
-      10 GB of memory. Additionally, there should be enough chunks available so that each worker always has something to work on.
-
-      On the otherhand, you also want to avoid chunk sizes that are too small as we see in the exercise.
-      Every task comes with some overhead which is somewhere between 200us and 1ms. Very large graphs
-      with millions of tasks will lead to overhead being in the range from minutes to hours which is not recommended.
-
+```{literalinclude} example/chunk_np.py
+:language: python
 ```
+
+:::
+:::{group-tab} Dask
+
+```{literalinclude} example/chunk_dask.py
+:language: python
+```
+
+:::
+::::
+
+But what happens if we use different chunk sizes?
+Try out with different chunk sizes:
+
+- What happens if the dask chunks=(20000,20000)
+
+- What happens if the dask chunks=(250,250)
+
+:::{solution} Choice of chunk size
+
+The choice is problem dependent, but here are a few things to consider:
+
+Each chunk of data should be small enough so that it fits comforably in each worker's available memory.
+Chunk sizes between 10MB-1GB are common, depending on the availability of RAM. Dask will likely
+manipulate as many chunks in parallel on one machine as you have cores on that machine.
+So if you have a machine with 10 cores and you choose chunks in the 1GB range, Dask is likely to use at least
+10 GB of memory. Additionally, there should be enough chunks available so that each worker always has something to work on.
+
+On the otherhand, you also want to avoid chunk sizes that are too small as we see in the exercise.
+Every task comes with some overhead which is somewhere between 200us and 1ms. Very large graphs
+with millions of tasks will lead to overhead being in the range from minutes to hours which is not recommended.
+:::
+
+:::::
 
 (ex-dask-df)=
 
-### 1.2. using dask.dataframe
+### 1.2. Using dask.dataframe
 
-```{eval-rst}
-.. exercise:: Benchmarking DataFrame.apply()
+::::{exercise} Benchmarking DataFrame.apply()
 
-   Recall the
-   :ref:`word count <word-count-problem>`
-   project that we encountered earlier and the :func:`scipy.optimize.curve_fit` function.
-   The :download:`results.csv <data/results.csv>` file contains word counts of the 10
-   most frequent words in different texts, and we want to fit a power law to the
-   individual distributions in each row.
+Recall the :ref:`word count <word-count-problem>` project that we encountered
+earlier and the :func:`scipy.optimize.curve_fit` function. The
+:download:`results.csv <data/results.csv>` file contains word counts of the 10
+most frequent words in different texts, and we want to fit a power law to the
+individual distributions in each row.
 
-   Here are our fitting functions:
+Here are our fitting functions:
 
-   .. code-block:: python
+```python
+from scipy.optimize import curve_fit
 
-      from scipy.optimize import curve_fit
+def powerlaw(x, A, s):
+    return A * np.power(x, s)
 
-      def powerlaw(x, A, s):
-          return A * np.power(x, s)
-
-      def fit_powerlaw(row):
-          X = np.arange(row.shape[0]) + 1.0
-          params, cov = curve_fit(f=powerlaw, xdata=X, ydata=row, p0=[100, -1], bounds=(-np.inf, np.inf))
-          return params[1]
-
-   Compare the performance of
-   :meth:`dask.dataframe.DataFrame.apply` with
-   :meth:`pandas.DataFrame.apply`
-   for the this example. You will probably see a slowdown due to the parallelisation
-   overhead. But what if you add a ``time.sleep(0.01)`` inside :meth:`fit_powerlaw` to
-   emulate a time-consuming calculation?
-
-   .. callout:: Hints
-      :class: dropdown
-
-      - You will need to call :meth:`apply` on the dataframe starting from column 1: ``dataframe.iloc[:,1:].apply()``
-      - Remember that both Pandas and Dask have the :meth:`read_csv` function.
-      - Try repartitioning the dataframe into 4 partitions with ``ddf4=ddf.repartition(npartitions=4)``.
-      - You will probably get a warning in your Dask version that `You did not provide metadata`.
-        To remove the warning, add the ``meta=(None, "float64")`` flag to :meth:`apply`. For the
-        current data, this does not affect the performance.
-
-   .. callout:: More hints with Pandas code
-      :class: dropdown
-
-      You need to reimplement the highlighted part which creates the
-      dataframe and applies the :func:`fit_powerlaw` function.
-
-      .. literalinclude:: exercise/apply_pd.py
-         :language: ipython
-         :emphasize-lines: 16-17
-
-
-   .. solution::
-
-      .. literalinclude:: exercise/apply_dask.py
-         :language: ipython
-
+def fit_powerlaw(row):
+    X = np.arange(row.shape[0]) + 1.0
+    params, cov = curve_fit(f=powerlaw, xdata=X, ydata=row, p0=[100, -1], bounds=(-np.inf, np.inf))
+    return params[1]
 ```
+
+Compare the performance of :meth:`dask.dataframe.DataFrame.apply` with
+:meth:`pandas.DataFrame.apply` for the this example. You will probably see a
+slowdown due to the parallelisation overhead. But what if you add a
+``time.sleep(0.01)`` inside :meth:`fit_powerlaw` to emulate a time-consuming
+calculation?
+
+:::{callout} Hints
+:class: dropdown
+
+- You will need to call :meth:`apply` on the dataframe starting from column 1: ``dataframe.iloc[:,1:].apply()``
+- Remember that both Pandas and Dask have the :meth:`read_csv` function.
+- Try repartitioning the dataframe into 4 partitions with ``ddf4=ddf.repartition(npartitions=4)``.
+- You will probably get a warning in your Dask version that `You did not provide metadata`.
+  To remove the warning, add the ``meta=(None, "float64")`` flag to :meth:`apply`. For the
+  current data, this does not affect the performance.
+:::
+
+:::{callout} More hints with Pandas code
+:class: dropdown
+
+You need to reimplement the highlighted part which creates the
+dataframe and applies the :func:`fit_powerlaw` function.
+
+```{literalinclude} exercise/apply_pd.py
+:language: ipython
+:emphasize-lines: 16-17
+```
+
+:::
+
+:::{solution}
+
+```{literalinclude} exercise/apply_dask.py
+:language: ipython
+```
+
+:::
+::::
 
 (ex-dask-bag)=
 
-### 1.3. using dask.bag
+### 1.3. Using dask.bag
 
-```{eval-rst}
-.. exercise:: Break down the dask.bag computational pipeline
+:::{exercise} Break down the dask.bag computational pipeline
 
-   Revisit the
-   :ref:`word count problem <word-count-problem>`
-   and the implementation with a ``dask.bag`` that we saw above.
+Revisit the
+:ref:`word count problem <word-count-problem>`
+and the implementation with a ``dask.bag`` that we saw above.
 
-   - To get a feeling for the computational pipeline, break down the computation into
-     separate steps and investigate intermediate results using :meth:`.compute`.
-   - Benchmark the serial and ``dask.bag`` versions. Do you see any speedup?
-     What if you have a larger textfile? You can for example concatenate all texts into
-     a single file: ``cat data/*.txt > data/all.txt``.
-
-```
+- To get a feeling for the computational pipeline, break down the computation into
+  separate steps and investigate intermediate results using :meth:`.compute`.
+- Benchmark the serial and ``dask.bag`` versions. Do you see any speedup?
+  What if you have a larger textfile? You can for example concatenate all texts into
+  a single file: ``cat data/*.txt > data/all.txt``.
+:::
 
 ## Low level interface: delayed
 
@@ -623,26 +620,25 @@ z.compute()
 # 603 ms ± 181 µs per loop (mean ± std. dev. of 7 runs, 1 loop each)
 ```
 
-```{eval-rst}
-.. callout:: Default scheduler for dask collections
+:::{callout} Default scheduler for dask collections
 
-   ``dask.array`` and ``dask.dataframe`` use the ``threads`` scheduler
+``dask.array`` and ``dask.dataframe`` use the ``threads`` scheduler
 
-   ``dask.bag`` uses the ``processes`` scheduler
+``dask.bag`` uses the ``processes`` scheduler
 
-   In case to change the default scheduler, using `dask.config.set` is recommended:
+In case to change the default scheduler, using `dask.config.set` is recommended:
 
-   .. code-block:: ipython
+```ipython
+# To set globally
+dask.config.set(scheduler='processes')
+x.compute()
 
-      # To set globally
-      dask.config.set(scheduler='processes')
-      x.compute()
-
-      # To set it as a context manager
-      with dask.config.set(scheduler='threads'):
-          x.compute()
-
+# To set it as a context manager
+with dask.config.set(scheduler='threads'):
+    x.compute()
 ```
+
+:::
 
 ## Comparison to Spark
 
@@ -663,77 +659,74 @@ between the two frameworks:
 
 ## Exercise set 2
 
-```{eval-rst}
-.. challenge:: Dask delay
+::::{challenge} Dask delay
 
-   We extend the previous example a little bit more by applying the function
-   on a data array using for loop and adding an *if* condition:
+We extend the previous example a little bit more by applying the function
+on a data array using for loop and adding an *if* condition:
 
-   .. literalinclude:: example/delay_more.py
-
-
-   Please add ``dask.delayed`` to parallelize the program as much as possible
-   and check graph visualizations.
-
-   .. solution::
-
-      .. literalinclude:: example/delay_more_solution.py
-
+```{literalinclude} example/delay_more.py
 ```
 
-```{eval-rst}
-.. challenge:: Climate simulation data using Xarray and Dask
+Please add ``dask.delayed`` to parallelize the program as much as possible
+and check graph visualizations.
 
-   This exercise is working with NetCDF files using Xarray. The files contain
-   monthly global 2m air temperature for 10 years.
-   Xarray is chosen due to its ability to seamlessly integrate with Dask
-   to support parallel computations on datasets.
+:::{solution}
 
-
-   We will first read data with Dask and Xarray. See
-   https://xarray.pydata.org/en/stable/dask.html#reading-and-writing-data for more details.
-
-   Note that the NetCDF files are here https://github.com/ENCCS/hpda-python/tree/main/content/data ,
-   you need to ``git clone`` the repository or download the files to your laptop first.
-   Then depending on where you put the files,
-   you may need to adapt the path to the data folder in the Python code.
-
-   .. code-block:: ipython
-
-      import dask
-      import xarray as xr
-      import matplotlib.pyplot as plt
-      %matplotlib inline
-      ds=xr.open_mfdataset('./data/tas*.nc', parallel=True,use_cftime=True)
-
-
-   :func:`xarray.open_mfdataset` is for reading multiple files and will chunk each file into a single Dask array by default.
-   One could supply the chunks keyword argument to control the size of the resulting Dask arrays.
-   Passing the keyword argument ``parallel=True`` to :func:`xarray.open_mfdataset` will speed up the reading of
-   large multi-file datasets by executing those read tasks in parallel using ``dask.delayed``.
-
-   Explore the following operations line-by-line:
-
-   .. code-block:: ipython
-
-      ds
-      ds.tas
-      #dsnew = ds.chunk({"time": 1,"lat": 80,"lon":80})   # you can further rechunk the data
-      #dask.visualize(ds.tas) # do not visualize, the graph is too big
-      ds['tas'] = ds['tas'] - 273.15     # convert from Kelvin to degree Celsius
-      mean_tas=ds.tas.mean("time")  # lazy compuation
-      mean_tas.plot(cmap=plt.cm.RdBu_r,vmin=-50,vmax=50) # plotting triggers computation
-      tas_ann=ds.tas.groupby('time.year').mean() # lazy compuation
-      tas_sto=tas_ann.sel(lon=18.07, lat=59.33,method='nearest')  # slicing is lazy as well
-      plt.plot(tas_sto.year,tas_sto)  # plotting trigers computation
-
+```{literalinclude} example/delay_more_solution.py
 ```
 
-```{eval-rst}
-.. keypoints::
+:::
+::::
 
+::::{challenge} Climate simulation data using Xarray and Dask
+
+This exercise is working with NetCDF files using Xarray. The files contain
+monthly global 2m air temperature for 10 years.
+Xarray is chosen due to its ability to seamlessly integrate with Dask
+to support parallel computations on datasets.
+
+We will first read data with Dask and Xarray. See
+<https://xarray.pydata.org/en/stable/dask.html#reading-and-writing-data> for more details.
+
+Note that the NetCDF files are here <https://github.com/ENCCS/hpda-python/tree/main/content/data> ,
+you need to ``git clone`` the repository or download the files to your laptop first.
+Then depending on where you put the files,
+you may need to adapt the path to the data folder in the Python code.
+
+```ipython
+import dask
+import xarray as xr
+import matplotlib.pyplot as plt
+%matplotlib inline
+ds=xr.open_mfdataset('./data/tas*.nc', parallel=True,use_cftime=True)
+```
+
+:func:`xarray.open_mfdataset` is for reading multiple files and will chunk each
+file into a single Dask array by default. One could supply the chunks keyword
+argument to control the size of the resulting Dask arrays. Passing the keyword
+argument ``parallel=True`` to :func:`xarray.open_mfdataset` will speed up the
+reading of large multi-file datasets by executing those read tasks in parallel
+using ``dask.delayed``.
+
+Explore the following operations line-by-line:
+
+```ipython
+ds
+ds.tas
+#dsnew = ds.chunk({"time": 1,"lat": 80,"lon":80})   # you can further rechunk the data
+#dask.visualize(ds.tas) # do not visualize, the graph is too big
+ds['tas'] = ds['tas'] - 273.15     # convert from Kelvin to degree Celsius
+mean_tas=ds.tas.mean("time")  # lazy compuation
+mean_tas.plot(cmap=plt.cm.RdBu_r,vmin=-50,vmax=50) # plotting triggers computation
+tas_ann=ds.tas.groupby('time.year').mean() # lazy compuation
+tas_sto=tas_ann.sel(lon=18.07, lat=59.33,method='nearest')  # slicing is lazy as well
+plt.plot(tas_sto.year,tas_sto)  # plotting trigers computation
+```
+
+::::
+
+```{keypoints}
    - Dask uses lazy execution
    - Dask can parallelize and perform out-of-memory computation.
      That is, handle data that would not fit in the memory if loaded at once.
    - Only use Dask for processing very large amount of data
-```
