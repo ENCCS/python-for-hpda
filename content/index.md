@@ -29,6 +29,13 @@ dask
 ```
 
 ```{toctree}
+:caption: Optional material
+:maxdepth: 1
+
+dask_opt
+```
+
+```{toctree}
 :caption: Reference
 :maxdepth: 1
 
