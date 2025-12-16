@@ -1,12 +1,11 @@
-# LESSON NAME
-
-Intro
+# Python for High Performance Data Analytics
 
 :::{prereq}
 
-- FIXME
-- ...
-- ...
+- Basic proficiency in Python (variables, flow control, functions)
+- Basic grasp of descriptive statistics (such as minimum, maximum, median, arithmetic mean...)
+- Basic knowledge of NumPy
+- Basic knowledge of some plotting package (Matplotlib, Seaborn, Holoviz...)
   :::
 
 ```{csv-table}
@@ -20,7 +19,13 @@ Intro
 :caption: The lesson
 :maxdepth: 1
 
-episode.md
+tabular-data
+interfacing-with-storage
+visualisation
+benchmarking
+multithreading
+dask
+
 ```
 
 ```{toctree}
@@ -31,25 +36,59 @@ quick-reference
 guide
 ```
 
+## What to expect from this course
+
+:::{discussion}
+
+How large are the datasets you are working with?
+
+:::
+
+Both for classical machine/deep learning and (generative) AI, the amount of
+data needed to train ever-growing models is becoming bigger and bigger.
+Moreover, great strides in both hardware and software development for high
+performance computing (HPC) applications allow for large scale computations
+that were not possible before.
+This course focuses on high performance data analytics (HPDA). The data
+can come from simulations or experiments (or just generally available
+datasets), and the goal is to pre-process, analyse and visualise it.
+The lesson introduces some of the modern Python stack for data analytics,
+dealing with packages such as Pandas, Polars, multithreading
+and Dask, as well as Streamlit for large-scale data visualisations.
+
 ## Learning outcomes
 
-FIXME
+This lesson provides a broad overview of methods to work with large datasets
+using tools and libraries from the Python ecosystem. Since this field is
+fairly extensive, we will try to expose just enough details on each topic
+for you to get a good idea of the picture and an understanding of what
+combination of tools and libraries will work well for your particular use
+case.
 
-This material is for ...
+Specifically, this lesson covers:
 
-By the end of this module, learners should:
-
-- ...
-- ...
+- Tools for efficiently storing data and writing/reading it to/from disk
+- Interfacing with databases and object storage solutions
+- Main libraries to work with arrays and tabular data
+- Performance monitoring and benchmarking
+- Workload parallelisation: threads and Dask
 
 ## See also
 
 :::{admonition} Credit
 :class: warning
 
-FIXME
+Don't forget to check out additional course materials from the
+[Data carpentry](https://datacarpentry.org/lessons/), such as:
 
-Don't forget to check out additional course materials from ...
+- [Data Analysis and Visualization in Python for Ecologists](https://datacarpentry.github.io/python-ecology-lesson/)
+- [10 minutes to pandas](https://pandas.pydata.org/pandas-docs/version/1.3/user_guide/10min.html#minutes-to-pandas)
+- [Modern Pandas (blog series by Tom Augspurger)](https://tomaugspurger.net/posts/modern-1-intro/)
+
+Moreover, the Polars [documentation](https://docs.pola.rs/) and
+[Awesome data science with Python](https://github.com/r0f1/datascience)
+are valuable resources, as well as
+[PythonSpeed](https://pythonspeed.com/datascience/#pandas).
 
 :::
 
