@@ -83,7 +83,7 @@ This means computational cost depends primarily on image size rather than the nu
 
 ---
 
-## Loading taxi data
+### Loading taxi data
 
 We start with a Polars dataframe containing pickup coordinates.
 
@@ -106,7 +106,7 @@ rides.shape
 
 Typical datasets may contain millions of rows.
 
-### Cleaning coordinates
+#### Cleaning coordinates
 
 Real-world datasets often contain:
 
@@ -127,7 +127,7 @@ rides_clean = rides.filter(
 
 ---
 
-## Exercise: Inspect the data
+### Exercise: Inspect the data
 
 ::::{exercise}
 Determine:
@@ -156,9 +156,9 @@ print(f"Removed: {removed:.2f}%")
 
 ---
 
-# Static visualisation with Datashader
+## Static visualisation with Datashader
 
-## Creating a canvas
+### Creating a canvas
 
 Datashader operates through a canvas.
 
@@ -179,7 +179,7 @@ canvas = ds.Canvas(
 
 ---
 
-## Converting Polars to Pandas
+### Converting Polars to Pandas
 
 Datashader currently operates most naturally with Pandas dataframes.
 
@@ -194,7 +194,7 @@ For interactive workflows this conversion cost is often acceptable since the vis
 
 ---
 
-## Rasterising points
+### Rasterising points
 
 Now aggregate pickup locations.
 
@@ -212,7 +212,7 @@ It is a two-dimensional array containing counts per pixel.
 
 ---
 
-## Shading
+### Shading
 
 Transform counts into colours.
 
@@ -231,7 +231,7 @@ You should now see the spatial distribution of taxi pickups.
 
 ---
 
-## What can we observe?
+### What can we observe?
 
 Dense clusters usually appear in:
 
@@ -251,7 +251,7 @@ No street network data was required.
 
 ---
 
-## Exercise: Compare resolutions
+### Exercise: Compare resolutions
 
 ::::{exercise}
 Generate two visualisations:
@@ -298,7 +298,7 @@ The larger canvas contains more pixels and therefore more detail. The underlying
 
 ---
 
-## Visualising another variable
+### Visualising another variable
 
 Instead of counting rides, we can aggregate other quantities.
 
@@ -323,7 +323,7 @@ This shows how aggregated statistics can be mapped spatially.
 
 ---
 
-## Discussion
+### Discussion
 
 Think about the following question:
 
@@ -340,7 +340,7 @@ Possible answers:
 
 ---
 
-# Interactive visualisation with HoloViews
+## Interactive visualisation with HoloViews
 
 Static images are useful, but exploration often requires:
 
@@ -353,7 +353,7 @@ HoloViews provides a high-level interface for this.
 
 ---
 
-## Initial setup
+### Initial setup
 
 ```python
 import holoviews as hv
@@ -363,7 +363,7 @@ hv.extension("bokeh")
 
 ---
 
-## Creating a point dataset
+### Creating a point dataset
 
 ```python
 points = hv.Points(
@@ -387,7 +387,7 @@ For large datasets it becomes slow.
 
 ---
 
-## Datashading interactively
+### Datashading interactively
 
 Instead of rendering all points:
 
@@ -409,7 +409,7 @@ This is one of the key advantages of combining HoloViews and Datashader.
 
 ---
 
-## Dynamic exploration
+### Dynamic exploration
 
 We can create subsets.
 
@@ -437,7 +437,7 @@ datashade(airport_points)
 
 ---
 
-## Exercise: Compare day and night
+### Exercise: Compare day and night
 
 ::::{exercise}
 Create separate visualisations for:
@@ -478,7 +478,7 @@ Build separate HoloViews objects and compare them side by side.
 
 ---
 
-# Building an interactive dashboard
+## Building an interactive dashboard
 
 A natural next step is to use Panel.
 
@@ -511,7 +511,7 @@ This architecture scales surprisingly well because rendering remains aggregation
 
 ---
 
-## Exercise: Design a dashboard
+### Exercise: Design a dashboard
 
 ::::{exercise}
 Work in pairs.
@@ -529,7 +529,7 @@ Sketch the layout on paper before implementing anything.
 
 ---
 
-# Summary
+## Summary
 
 Datashader changes the visualisation problem.
 
