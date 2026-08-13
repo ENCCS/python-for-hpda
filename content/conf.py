@@ -90,7 +90,7 @@ html_theme = "furo"
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
-html_css_files = ["overrides.css"]
+# html_css_files = ["overrides.css"]
 html_favicon = str((HERE / "_static" / "favicon.ico").resolve())
 github_repo_url = f"https://github.com/ENCCS/{github_repo_name or detected_repo_name}"
 html_theme_options = {
@@ -145,3 +145,16 @@ intersphinx_mapping = {
     # "lesson": ("https://coderefinery.github.io/sphinx-lesson/", None),
     # "myst": ("https://myst-parser.readthedocs.io/en/latest/", None),
 }
+
+import os
+
+if os.environ.get('GITHUB_REF', '') == 'refs/heads/main':
+    html_js_files = [
+        (
+            'https://plausible.io/js/script.js',
+            {
+                "data-domain": f"enccs.github.io/{detected_repo_name}",
+                "defer": "defer"
+            }
+        ),
+    ]
