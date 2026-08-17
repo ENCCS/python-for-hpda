@@ -1,120 +1,127 @@
-# Visualising Large Datasets
+# Visualising large datasets with Datashader and HoloViews
 
 :::{objectives}
 
-- Understand why traditional plotting methods struggle with large datasets.
-- Create static visualisations of tens of millions of points using Datashader.
-- Visualise geographic point data from the NYC Taxi dataset.
-- Build interactive visualisations using HoloViews.
-- Learn how aggregation-based visualisation differs from point-based rendering.
+- Understand why traditional plotting approaches struggle with large datasets.
+- Learn the basic ideas behind Datashader's aggregation-based rendering model.
+- Create static visualisations of the NYC Taxi dataset using Datashader.
+- Use HoloViews and hvPlot to build interactive visualisations that remain responsive when exploring millions of records.
+- Overlay aggregated data on geographic map tiles and use interactive exploration to discover patterns in the data.
 :::
 
 :::{questions}
 
-- Why do plotting libraries become slow for large datasets?
-- How can we visualise millions of GPS locations efficiently?
-- What is the difference between plotting points and plotting aggregates?
-- How can interactive visualisation remain responsive with large datasets?
+- Why do scatter plots become both slow and difficult to interpret for large datasets?
+- What does Datashader do differently from traditional plotting libraries?
+- How can we visualise millions of taxi trips without reducing the dataset to a small sample?
+- How can interactive visualisation remain responsive even when the underlying dataset is very large?
 :::
 
 ## Motivation
 
-The NYC Taxi dataset contains records of taxi trips in New York City and is a
-classic benchmark dataset for data analysis, since a single year can contain
-hundreds of millions of trips. Suppose we want to visualise every taxi pickup
-location: naively, we would create a marker for each pickup/dropoff. However,
-this approach becomes very expensive for large datasets.
+The NYC Taxi dataset has become a classic example in data science and visualisation. A single year of taxi trips contains millions of records, each associated with a pickup location, a dropoff location, timestamps, fares, distances, and other attributes.
 
-In this lesson we will learn a different approach:
+Suppose we want to answer a simple question:
 
-1. Aggregate data into pixels.
-2. Render aggregate statistics rather than individual points.
-3. Create interactive visualisations that remain responsive even for very large
-datasets.
+> Where are taxis picked up in New York City?
+
+The most direct approach is to create a scatter plot of all pickup locations:
+
+```python
+df.hvplot.scatter(
+    x="pickup_longitude",
+    y="pickup_latitude"
+)
+```
+
+This sounds reasonable, but for a sufficiently large dataset two problems quickly appear.
+
+First, plotting becomes slow because the plotting library attempts to draw enormous numbers of graphical objects.
+
+Second, the resulting figure is often difficult to interpret. Dense regions become saturated with points and important structures disappear beneath a cloud of overlapping markers.
+
+In this lesson we will explore an alternative approach. Rather than plotting every individual observation, we will aggregate observations into pixels and visualise those aggregates. This gives us both better performance and, somewhat surprisingly, more informative visualisations.
 
 ---
 
-## Traditional plotting
+## The challenge of overplotting
 
-Imagine a dataset containing 100 million taxi pickups (we are using a subset in this case). A scatter plot in Matplotlib would attempt to render 100M markers. While rendering each marker is quick, the sheer scale of the dataset makes this operation expensive at
+Before introducing any new tools, it is worth reflecting on why a traditional scatter plot struggles.
 
-Furthermore:
+Imagine plotting ten million taxi pickup locations. At first sight it seems natural to draw ten million points. However, the display only contains a finite number of pixels. Large numbers of observations will inevitably fall into the same screen regions.
 
-- many points overlap
-- dense regions become saturated
-- important structures disappear
+As a result:
 
-The problem is not only performance.
+- rendering becomes expensive,
+- dense areas become visually saturated,
+- regions with low density become difficult to distinguish,
+- many individual markers are hidden behind other markers.
 
-It is also visual clarity.
+The figure may faithfully represent the data, yet reveal surprisingly little about its structure.
 
-:::{figure} ../img/placeholder-overplotting.png
-:alt: Overplotting concept
+A useful question to keep in mind throughout this lesson is therefore:
 
-Overplotting occurs when so many points occupy the same screen area that structures become difficult to interpret.
-:::
+> Do we really need to draw every point?
 
-### Datashader's approach
+---
 
-Datashader does not attempt to draw every point.
+## Datashader's approach
 
-Instead, it computes values for screen pixels.
+Datashader answers that question by changing how visualisation is performed.
 
-Conceptually:
+Rather than creating one graphical object for every observation, Datashader divides the plotting area into pixels and computes statistics for each pixel. The statistic might be:
 
-```
-taxi pickups
-      ↓
-aggregate into pixels
-      ↓
-compute count per pixel
-      ↓
+- the number of observations,
+- the mean value of a variable,
+- the sum of a variable,
+- some other aggregation.
+
+Conceptually, the workflow looks like this:
+
+```text
+raw observations
+        ↓
+assign observations to pixels
+        ↓
+aggregate values per pixel
+        ↓
 render image
 ```
 
-This means computational cost depends primarily on image size rather than the number of markers displayed.
+Because the number of pixels is fixed by the size of the display, visualisation can remain practical even when the dataset contains millions or tens of millions of rows.
 
-:::{keypoints}
+An important consequence is that we no longer think primarily in terms of plotting points. Instead, we think in terms of visualising aggregates.
 
-- Datashader visualises aggregates instead of graphical objects.
-- Performance depends largely on output resolution.
-- Dense datasets often become easier to interpret.
+:::{discussion}
+How might the appearance of a city change if we visualise taxi density instead of individual taxi trips?
+
+What features do you expect to become visible?
 :::
 
 ---
 
-### Loading taxi data
+## Loading and preparing the data
 
-We start with a Polars dataframe containing pickup coordinates.
+Throughout this lesson we assume that the taxi data have already been loaded into a Polars DataFrame.
 
 ```python
 import polars as pl
 
-rides = pl.read_parquet("yellow_tripdata_2023.parquet")
+rides = pl.read_parquet(
+    "yellow_tripdata_2023.parquet"
+)
+```
 
+For visualisation we will focus on pickup locations.
+
+```python
 rides.select(
     "pickup_longitude",
     "pickup_latitude"
 ).head()
 ```
 
-Before plotting, inspect the shape:
-
-```python
-rides.shape
-```
-
-Typical datasets may contain millions of rows.
-
-#### Cleaning coordinates
-
-Real-world datasets often contain:
-
-- missing values
-- invalid coordinates
-- outliers
-
-Let's filter obvious errors.
+Before plotting geographic data it is often worth performing a small amount of cleaning.
 
 ```python
 rides_clean = rides.filter(
@@ -125,18 +132,20 @@ rides_clean = rides.filter(
 )
 ```
 
+The exact filtering criteria are not particularly important. The goal is simply to remove clearly invalid coordinates.
+
 ---
 
-### Exercise: Inspect the data
+### Exercise: Inspect the dataset
 
 ::::{exercise}
 Determine:
 
-1. Number of rides before filtering.
-2. Number of rides after filtering.
-3. Percentage of rows removed.
+1. The number of rows before filtering.
+2. The number of rows after filtering.
+3. The percentage of rows removed.
 
-Use Polars expressions where possible.
+How large is the dataset that you are working with?
 ::::
 
 ::::{solution}
@@ -147,8 +156,8 @@ after = rides_clean.height
 
 removed = 100 * (before - after) / before
 
-print(f"Before: {before}")
-print(f"After : {after}")
+print(f"Rows before filtering: {before}")
+print(f"Rows after filtering : {after}")
 print(f"Removed: {removed:.2f}%")
 ```
 
@@ -156,17 +165,43 @@ print(f"Removed: {removed:.2f}%")
 
 ---
 
+## First attempt: a scatter plot
+
+Before introducing Datashader, let us try the obvious solution.
+
+```python
+import hvplot.polars
+
+rides_clean.hvplot.scatter(
+    x="pickup_longitude",
+    y="pickup_latitude",
+    alpha=0.1,
+    width=700,
+    height=500
+)
+```
+
+Depending on the dataset size, this may still work reasonably well.
+
+However, zoom out and consider what information the figure provides. Dense areas become dark blobs. Individual points are no longer meaningful. The overall structure of the city is difficult to see.
+
+This is a useful teaching moment because it demonstrates that the challenge is not only computational. Even if plotting were instantaneous, the visual representation is not necessarily the most informative.
+
+:::{discussion}
+What information is visible in the scatter plot?
+
+What information is hidden?
+
+Would subsampling the dataset solve all of these problems?
+:::
+
+---
+
 ## Static visualisation with Datashader
 
-### Creating a canvas
+Datashader provides a different visualisation model based on aggregation.
 
-Datashader operates through a canvas.
-
-The canvas specifies:
-
-- image width
-- image height
-- coordinate ranges
+We begin by creating a canvas that defines the output image resolution.
 
 ```python
 import datashader as ds
@@ -177,44 +212,30 @@ canvas = ds.Canvas(
 )
 ```
 
----
-
-### Converting Polars to Pandas
-
-Datashader currently operates most naturally with Pandas dataframes.
+We then aggregate pickup locations onto that canvas.
 
 ```python
-df = rides_clean.select(
-    "pickup_longitude",
-    "pickup_latitude"
-).to_pandas()
-```
+import pandas as pd
 
-For interactive workflows this conversion cost is often acceptable since the visualisation stage dominates.
+coords = (
+    rides_clean
+    .select(
+        "pickup_longitude",
+        "pickup_latitude"
+    )
+    .to_pandas()
+)
 
----
-
-### Rasterising points
-
-Now aggregate pickup locations.
-
-```python
 agg = canvas.points(
-    df,
+    coords,
     "pickup_longitude",
     "pickup_latitude"
 )
 ```
 
-The result is not yet an image.
+Notice that the result is not yet an image. It is an aggregated data structure containing counts for each pixel.
 
-It is a two-dimensional array containing counts per pixel.
-
----
-
-### Shading
-
-Transform counts into colours.
+To transform it into a viewable image we apply a colour mapping.
 
 ```python
 from datashader import transfer_functions as tf
@@ -227,44 +248,44 @@ img = tf.shade(
 img
 ```
 
-You should now see the spatial distribution of taxi pickups.
+At this point many structures that were invisible in the scatter plot begin to emerge naturally.
+
+Dense concentrations of pickups reveal activity centres, while transportation corridors often become visible even though no road network data have been supplied.
 
 ---
 
-### What can we observe?
+### A note on Polars support
 
-Dense clusters usually appear in:
+If you are using hvPlot, you can often work directly with Polars DataFrames:
 
-- Manhattan
-- JFK Airport
-- LaGuardia Airport
+```python
+import hvplot.polars
 
-Connections between dense clusters frequently reveal:
+rides_clean.hvplot.scatter(
+    x="pickup_longitude",
+    y="pickup_latitude"
+)
+```
 
-- major roads
-- bridges
-- tunnels
+For many workflows this is the most convenient approach.
 
-Interestingly, these structures emerge purely from point density.
+Internally, hvPlot currently performs conversions when working with Polars data, since Polars is not yet a native HoloViews data interface. Most users do not need to worry about these details, but it explains why examples in documentation and tutorials sometimes convert data explicitly to Pandas before visualisation.
 
-No street network data was required.
+For this lesson we will mostly use the direct Polars interface when possible and discuss lower-level details only when they help explain how the system works.
 
 ---
 
-### Exercise: Compare resolutions
+### Exercise: Comparing resolutions
 
 ::::{exercise}
-Generate two visualisations:
+Create Datashader visualisations at two different resolutions:
 
-1. 400 × 300 pixels
-2. 1600 × 1200 pixels
+- 400 × 300 pixels
+- 1600 × 1200 pixels
 
-Compare:
+Compare the resulting images.
 
-- rendering speed
-- visual detail
-
-What changes and what stays the same?
+Which structures become easier to see at higher resolution? Does the underlying dataset change?
 ::::
 
 ::::{solution}
@@ -281,79 +302,51 @@ large = ds.Canvas(
 )
 
 agg_small = small.points(
-    df,
+    coords,
     "pickup_longitude",
     "pickup_latitude"
 )
 
 agg_large = large.points(
-    df,
+    coords,
     "pickup_longitude",
     "pickup_latitude"
 )
 ```
 
-The larger canvas contains more pixels and therefore more detail. The underlying dataset remains unchanged.
+The visual representation changes because the aggregation grid changes, but the underlying observations remain the same.
 ::::
 
 ---
 
-### Visualising another variable
+### Beyond simple counts
 
-Instead of counting rides, we can aggregate other quantities.
+So far each pixel represents the number of rides associated with that location.
 
-For example, average trip distance.
+Datashader can aggregate other quantities as well. For example, suppose we want to examine average trip distance spatially.
 
 ```python
 agg_distance = canvas.points(
-    df,
+    rides_clean.to_pandas(),
     "pickup_longitude",
     "pickup_latitude",
     agg=ds.mean("trip_distance")
 )
 ```
 
-Render:
+Rendering this aggregation may reveal different spatial patterns than a density map.
 
-```python
-img = tf.shade(agg_distance)
-```
-
-This shows how aggregated statistics can be mapped spatially.
-
----
-
-### Discussion
-
-Think about the following question:
-
-::::{discussion}
-Why might a density map be more informative than plotting all taxi locations directly?
-::::
-
-Possible answers:
-
-- less visual clutter
-- improved performance
-- easier identification of hotspots
-- visibility of spatial structures
+A useful lesson here is that Datashader is not a specialised mapping tool. It is a general framework for visualising aggregated data.
 
 ---
 
 ## Interactive visualisation with HoloViews
 
-Static images are useful, but exploration often requires:
+Static figures are useful, but exploratory analysis often involves repeatedly zooming, panning, and filtering.
 
-- zooming
-- panning
-- filtering
-- comparing subsets
+The HoloViz ecosystem combines particularly well with Datashader because aggregation can be performed dynamically as the user explores the data.
 
-HoloViews provides a high-level interface for this.
-
----
-
-### Initial setup
+Start by enabling the HoloViews backend.
 
 ```python
 import holoviews as hv
@@ -361,13 +354,11 @@ import holoviews as hv
 hv.extension("bokeh")
 ```
 
----
-
-### Creating a point dataset
+Next construct a set of points.
 
 ```python
 points = hv.Points(
-    df,
+    coords,
     kdims=[
         "pickup_longitude",
         "pickup_latitude"
@@ -375,185 +366,163 @@ points = hv.Points(
 )
 ```
 
-We could display this directly:
+For small datasets we could display these points directly:
 
 ```python
 points
 ```
 
-For small datasets this works well.
-
-For large datasets it becomes slow.
-
----
-
-### Datashading interactively
-
-Instead of rendering all points:
+For large datasets it is more effective to datashade them.
 
 ```python
 from holoviews.operation.datashader import datashade
 
-interactive_map = datashade(points)
-
-interactive_map
+datashade(points)
 ```
 
-Now:
+Try zooming into different parts of the figure.
 
-- zooming triggers re-aggregation
-- plots remain responsive
-- full-resolution data remain available
-
-This is one of the key advantages of combining HoloViews and Datashader.
+One of the key ideas behind this workflow is that the visualisation is recomputed when the viewport changes. Rather than plotting all observations at all scales, the visualisation is adapted to the current view.
 
 ---
 
-### Dynamic exploration
+### Looking at the city through data
 
-We can create subsets.
+The pickup locations alone already contain a surprising amount of information.
 
-For example:
-
-```python
-airport_rides = df.query(
-    "pickup_longitude < -73.7"
-)
-```
-
-Create another view:
-
-```python
-airport_points = hv.Points(
-    airport_rides,
-    kdims=[
-        "pickup_longitude",
-        "pickup_latitude"
-    ]
-)
-
-datashade(airport_points)
-```
-
----
-
-### Exercise: Compare day and night
+As you zoom through the city, try to identify features that become visible through taxi activity patterns.
 
 ::::{exercise}
-Create separate visualisations for:
+Working in pairs, identify:
 
-- daytime rides
-- nighttime rides
+- JFK Airport,
+- LaGuardia Airport,
+- Central Park,
+- at least one major bridge crossing,
+- at least one tunnel crossing.
 
-Compare spatial patterns.
-
-Questions:
-
-- Which areas are active throughout the day?
-- Which areas become more prominent at night?
+Discuss what visual clues helped you identify each feature.
 ::::
 
-Hints:
+Many participants find this exercise surprisingly engaging because the city effectively emerges from the data.
+
+---
+
+## Adding geographic context
+
+Longitude and latitude become much easier to interpret when shown together with a background map.
+
+One of the most striking visualisations in the HoloViz ecosystem combines Datashader aggregation with web map tiles.
 
 ```python
-pickup_datetime
+import hvplot.polars
+
+rides_clean.hvplot.points(
+    x="pickup_longitude",
+    y="pickup_latitude",
+    rasterize=True,
+    tiles=True,
+    cmap="fire",
+    alpha=0.7,
+    frame_width=800,
+    frame_height=600,
+)
 ```
 
-can be converted into an hour value and used for filtering.
+The visualisation now combines two pieces of information:
+
+- geographic context from the map,
+- taxi activity from the datashaded aggregation.
+
+At city scale we immediately see where activity is concentrated. As we zoom further in, neighbourhood-level and street-level structures begin to appear.
+
+This is often the first point in the lesson where participants experience the full benefit of the Datashader approach. Millions of observations can be explored interactively without first reducing the dataset to a small sample.
+
+---
+
+### Exercise: Day versus night
+
+Taxi activity changes dramatically throughout the day.
+
+Create an additional column containing the pickup hour.
+
+```python
+rides = rides.with_columns(
+    pl.col("pickup_datetime").dt.hour()
+    .alias("hour")
+)
+```
+
+::::{exercise}
+Create separate visualisations for daytime and nighttime rides.
+
+Questions to investigate:
+
+- Which areas are busy throughout the day?
+- Which areas become more important at night?
+- Do airports appear differently during different periods of the day?
+
+Discuss your observations with a neighbour before comparing them with the rest of the group.
+::::
 
 ::::{solution}
 
 ```python
-rides_day = rides.filter(
+day = rides.filter(
     pl.col("hour").is_between(6, 18)
 )
 
-rides_night = rides.filter(
+night = rides.filter(
     ~pl.col("hour").is_between(6, 18)
 )
 ```
 
-Build separate HoloViews objects and compare them side by side.
+Create separate datashaded visualisations and compare them side by side.
 ::::
 
 ---
 
-## Building an interactive dashboard
+## Mini-project: Explore your own question
 
-A natural next step is to use Panel.
-
-```python
-import panel as pn
-```
-
-Widgets can control:
-
-- time of day
-- passenger count
-- payment type
-- trip distance
-
-A typical workflow becomes
-
-```text
-Polars
-   ↓
-filter
-   ↓
-HoloViews
-   ↓
-Datashader
-   ↓
-Panel dashboard
-```
-
-This architecture scales surprisingly well because rendering remains aggregation-based.
-
----
-
-### Exercise: Design a dashboard
+At this stage you have all of the building blocks needed to perform exploratory visualisation on a large dataset.
 
 ::::{exercise}
-Work in pairs.
+Work in groups of two or three.
 
-Design an interactive taxi exploration dashboard.
+Formulate a question that can be investigated using the taxi dataset.
 
-Decide:
+Examples include:
 
-- which filters are useful
-- which variables should control colour
-- what questions the dashboard should answer
+- How do pickup locations vary with time of day?
+- Are different payment types associated with different parts of the city?
+- Which locations generate the longest average trips?
+- How does weekend activity differ from weekday activity?
 
-Sketch the layout on paper before implementing anything.
+Create one visualisation that helps answer your question.
 ::::
+
+Be prepared to present both:
+
+1. your question,
+2. the visualisation you created,
+3. one interesting observation.
 
 ---
 
 ## Summary
 
-Datashader changes the visualisation problem.
+A common reaction when large visualisations become slow is to look for faster hardware or more efficient plotting libraries. Datashader takes a different approach. Instead of attempting to draw every observation, it focuses on visualising meaningful aggregates.
 
-Instead of rendering graphical objects:
+For geographic datasets such as NYC Taxi trips, this often leads not only to better performance but also to more informative figures. Patterns that are difficult to see in traditional scatter plots become immediately visible once observations are aggregated into a density map.
 
-```text
-data → points → screen
-```
-
-it performs:
-
-```text
-data → aggregation → image
-```
-
-This allows visualisation of datasets that would overwhelm traditional plotting tools.
-
-HoloViews then adds an interactive layer, making it possible to explore the complete dataset rather than a sample.
+Combined with HoloViews and hvPlot, Datashader makes it possible to explore datasets containing millions of records interactively, without reducing them to a tiny sample.
 
 :::{keypoints}
 
-- Large datasets often require different visualisation techniques rather than faster hardware.
-- Datashader aggregates data into pixels instead of rendering markers.
-- HoloViews provides interactive exploration on top of Datashader.
-- Polars and Datashader work well together for large-scale analysis workflows.
-- Geographic datasets such as NYC Taxi data are particularly well suited for density-based visualisation.
+- Large datasets often require different visualisation strategies rather than simply faster plotting.
+- Overplotting is both a performance problem and a visualisation problem.
+- Datashader aggregates observations into pixels before rendering.
+- HoloViews and hvPlot provide an interactive interface on top of Datashader.
+- Geographic map tiles provide useful context when exploring spatial data.
+- Interactive aggregation allows exploration of datasets that would otherwise be difficult to visualise directly.
 :::
