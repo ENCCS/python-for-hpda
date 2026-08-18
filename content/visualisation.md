@@ -5,8 +5,10 @@
 - Understand why traditional plotting approaches struggle with large datasets.
 - Learn the basic ideas behind Datashader's aggregation-based rendering model.
 - Create static visualisations of the NYC Taxi dataset using Datashader.
-- Use HoloViews and hvPlot to build interactive visualisations that remain responsive when exploring millions of records.
-- Overlay aggregated data on geographic map tiles and use interactive exploration to discover patterns in the data.
+- Use HoloViews and hvPlot to build interactive visualisations that remain
+responsive when exploring millions of records.
+- Overlay aggregated data on geographic map tiles and use interactive
+exploration to discover patterns in the data.
 :::
 
 :::{questions}
@@ -19,7 +21,10 @@
 
 ## Motivation
 
-The NYC Taxi dataset has become a classic example in data science and visualisation. A single year of taxi trips contains millions of records, each associated with a pickup location, a dropoff location, timestamps, fares, distances, and other attributes.
+The NYC Taxi dataset from the previous episode has become a classic example in
+data science and visualisation. A single year of taxi trips contains millions
+of records, each associated with a pickup location, a dropoff location,
+timestamps, fares, distances, and other attributes.
 
 Suppose we want to answer a simple question:
 
@@ -28,87 +33,79 @@ Suppose we want to answer a simple question:
 The most direct approach is to create a scatter plot of all pickup locations:
 
 ```python
-df.hvplot.scatter(
+df.plot.scatter(
     x="pickup_longitude",
     y="pickup_latitude"
 )
 ```
 
-This sounds reasonable, but for a sufficiently large dataset two problems quickly appear.
+This sounds reasonable, but for a sufficiently large dataset two problems
+quickly appear: first, plotting becomes slow because the plotting library
+attempts to draw enormous numbers of graphical objects. Second, the resulting
+figure is often difficult to interpret. Dense regions become saturated with
+points and important structures disappear beneath a cloud of overlapping
+markers.
 
-First, plotting becomes slow because the plotting library attempts to draw enormous numbers of graphical objects.
-
-Second, the resulting figure is often difficult to interpret. Dense regions become saturated with points and important structures disappear beneath a cloud of overlapping markers.
-
-In this lesson we will explore an alternative approach. Rather than plotting every individual observation, we will aggregate observations into pixels and visualise those aggregates. This gives us both better performance and, somewhat surprisingly, more informative visualisations.
-
----
+In this episode we will explore an alternative approach. Rather than plotting
+every individual observation, we will aggregate observations into pixels and
+visualise those aggregates. This gives us both better performance and, somewhat
+surprisingly, more informative visualisations.
 
 ## The challenge of overplotting
 
-Before introducing any new tools, it is worth reflecting on why a traditional scatter plot struggles.
+Before introducing any new tools, it is worth reflecting on why a traditional
+scatter plot struggles.
 
-Imagine plotting ten million taxi pickup locations. At first sight it seems natural to draw ten million points. However, the display only contains a finite number of pixels. Large numbers of observations will inevitably fall into the same screen regions.
+Imagine plotting ten million taxi pickup locations. At first sight it seems
+natural to draw ten million points. However, the display only contains a finite
+number of pixels. Large numbers of observations will inevitably fall into the
+same screen regions.
 
-As a result:
+This leads to a number of problems:
 
 - rendering becomes expensive,
 - dense areas become visually saturated,
 - regions with low density become difficult to distinguish,
 - many individual markers are hidden behind other markers.
 
-The figure may faithfully represent the data, yet reveal surprisingly little about its structure.
-
-A useful question to keep in mind throughout this lesson is therefore:
-
-> Do we really need to draw every point?
-
----
+The figure may faithfully represent the data, yet reveal surprisingly little
+about its structure. Thus, we are led to ask whether it's actually *desirable*
+to plot every single point.
 
 ## Datashader's approach
 
-Datashader answers that question by changing how visualisation is performed.
+[Datashader](https://datashader.org/) answers that question by changing how
+visualisation is performed.
 
-Rather than creating one graphical object for every observation, Datashader divides the plotting area into pixels and computes statistics for each pixel. The statistic might be:
+Rather than creating one graphical object for every observation, Datashader
+divides the plotting area into pixels and computes statistics for each pixel.
+The statistic might be:
 
 - the number of observations,
 - the mean value of a variable,
 - the sum of a variable,
 - some other aggregation.
 
-Conceptually, the workflow looks like this:
+Conceptually, the workflow looks like this: raw observations -> assign
+observations to pixels -> aggregate values per pixel -> render image.
 
-```text
-raw observations
-        ↓
-assign observations to pixels
-        ↓
-aggregate values per pixel
-        ↓
-render image
-```
+Because the number of pixels is fixed by the size of the display, visualisation
+can remain practical even when the dataset contains millions or tens of
+millions of rows.
 
-Because the number of pixels is fixed by the size of the display, visualisation can remain practical even when the dataset contains millions or tens of millions of rows.
-
-An important consequence is that we no longer think primarily in terms of plotting points. Instead, we think in terms of visualising aggregates.
-
-:::{discussion}
-How might the appearance of a city change if we visualise taxi density instead of individual taxi trips?
-
-What features do you expect to become visible?
-:::
-
----
+An important consequence is that we no longer think primarily in terms of
+plotting points. Instead, we think in terms of visualising aggregates.
 
 ## Loading and preparing the data
 
-Throughout this lesson we assume that the taxi data have already been loaded into a Polars DataFrame.
+Throughout this lesson we assume that the taxi data have already been loaded
+into a Polars DataFrame.
 
 ```python
 import polars as pl
 
 rides = pl.read_parquet(
-    "yellow_tripdata_2023.parquet"
+    "nyc_yellow_taxi_2025-01.parquet"
 )
 ```
 
@@ -132,9 +129,8 @@ rides_clean = rides.filter(
 )
 ```
 
-The exact filtering criteria are not particularly important. The goal is simply to remove clearly invalid coordinates.
-
----
+The exact filtering criteria are not particularly important. The goal is simply
+to remove clearly invalid coordinates.
 
 ### Exercise: Inspect the dataset
 
@@ -163,8 +159,6 @@ print(f"Removed: {removed:.2f}%")
 
 ::::
 
----
-
 ## First attempt: a scatter plot
 
 Before introducing Datashader, let us try the obvious solution.
@@ -183,19 +177,48 @@ rides_clean.hvplot.scatter(
 
 Depending on the dataset size, this may still work reasonably well.
 
-However, zoom out and consider what information the figure provides. Dense areas become dark blobs. Individual points are no longer meaningful. The overall structure of the city is difficult to see.
+However, zoom out and consider what information the figure provides. Dense
+areas become dark blobs. Individual points are no longer meaningful. The
+overall structure of the city is difficult to see.
 
-This is a useful teaching moment because it demonstrates that the challenge is not only computational. Even if plotting were instantaneous, the visual representation is not necessarily the most informative.
+This is a useful teaching moment because it demonstrates that the challenge is
+not only computational. Even if plotting were instantaneous, the visual
+representation is not necessarily the most informative.
+
+### A note on Polars support
+
+If you are using hvPlot, you can often work directly with Polars DataFrames as
+in the example above. For many workflows this is the most convenient approach.
+
+Internally, hvPlot currently performs conversions when working with Polars
+data, since Polars is not yet a native HoloViews data interface. Most users do
+not need to worry about these details, but it explains why examples in
+documentation and tutorials sometimes convert data explicitly to Pandas before
+visualisation.
+
+For this lesson we will mostly use the direct Polars interface when possible
+and discuss lower-level details only when they help explain how the system
+works.
+
+::::{danger}
+
+Polars has a (experimental) `DataFrame.plot` interface which used to be a
+wrapper for `hvplot`. In recent versions (>=1.6.0), the default plotting
+package is instead [Altair](https://altair-viz.github.io/). To restore the old
+`hvplot`-based behaviour, the user has to explicitly import `hvplot.polars` and
+call `DataFrame.hvplot.scatter()`.
+
+::::
 
 :::{discussion}
-What information is visible in the scatter plot?
 
-What information is hidden?
+- What information is visible in the scatter plot?
 
-Would subsampling the dataset solve all of these problems?
+- What information is hidden?
+
+- Would subsampling the dataset solve all of these problems?
+
 :::
-
----
 
 ## Static visualisation with Datashader
 
@@ -233,9 +256,9 @@ agg = canvas.points(
 )
 ```
 
-Notice that the result is not yet an image. It is an aggregated data structure containing counts for each pixel.
-
-To transform it into a viewable image we apply a colour mapping.
+Notice that the result is not yet an image. It is an aggregated data structure
+containing counts for each pixel. To transform it into a viewable image we
+apply a colour mapping:
 
 ```python
 from datashader import transfer_functions as tf
@@ -248,32 +271,12 @@ img = tf.shade(
 img
 ```
 
-At this point many structures that were invisible in the scatter plot begin to emerge naturally.
+At this point many structures that were invisible in the scatter plot begin to
+emerge naturally.
 
-Dense concentrations of pickups reveal activity centres, while transportation corridors often become visible even though no road network data have been supplied.
-
----
-
-### A note on Polars support
-
-If you are using hvPlot, you can often work directly with Polars DataFrames:
-
-```python
-import hvplot.polars
-
-rides_clean.hvplot.scatter(
-    x="pickup_longitude",
-    y="pickup_latitude"
-)
-```
-
-For many workflows this is the most convenient approach.
-
-Internally, hvPlot currently performs conversions when working with Polars data, since Polars is not yet a native HoloViews data interface. Most users do not need to worry about these details, but it explains why examples in documentation and tutorials sometimes convert data explicitly to Pandas before visualisation.
-
-For this lesson we will mostly use the direct Polars interface when possible and discuss lower-level details only when they help explain how the system works.
-
----
+Dense concentrations of pickups reveal activity centres, while transportation
+corridors often become visible even though no road network data have been
+supplied.
 
 ### Exercise: Comparing resolutions
 
@@ -285,7 +288,6 @@ Create Datashader visualisations at two different resolutions:
 
 Compare the resulting images.
 
-Which structures become easier to see at higher resolution? Does the underlying dataset change?
 ::::
 
 ::::{solution}
@@ -314,16 +316,23 @@ agg_large = large.points(
 )
 ```
 
-The visual representation changes because the aggregation grid changes, but the underlying observations remain the same.
 ::::
-
----
 
 ### Beyond simple counts
 
-So far each pixel represents the number of rides associated with that location.
+So far each pixel represents the number of rides associated with that location, so our first example is equivalent to the following:
 
-Datashader can aggregate other quantities as well. For example, suppose we want to examine average trip distance spatially.
+```python
+canvas.points(
+    df,
+    "pickup_longitude",
+    "pickup_latitude",
+    agg=ds.count()
+)
+```
+
+Datashader can aggregate other quantities as well. For example, suppose we want
+to examine average trip distance spatially.
 
 ```python
 agg_distance = canvas.points(
@@ -336,9 +345,61 @@ agg_distance = canvas.points(
 
 Rendering this aggregation may reveal different spatial patterns than a density map.
 
-A useful lesson here is that Datashader is not a specialised mapping tool. It is a general framework for visualising aggregated data.
+### Other options and settings
 
----
+#### Colouring
+
+As we saw earlier, the mapping between a colour scale and the aggregated values is performed using the `tf.shade()` function. A colourmap can be prescribed with the `cmap` keyword argument; different colourmaps can help emphasise different structures. Common choices for density plots include `fire`, `viridis` and `inferno`, e.g.:
+
+```python
+tf.shade(agg, cmap='fire')
+```
+
+#### Linear and logarithmic scaling
+
+Taxi pickups are not distributed uniformly across New York. For example,
+Manhattan may have hundreds of times more pickups than other residential
+neighbourhoods. Thus, with linear scaling (which is the default), the denser
+areas dominate the image. If we use logarithmic scaling instead, we can inspect
+in more detail the low-density regions:
+
+```python
+tf.shade(agg, how='log')
+```
+
+This is usually a useful first step to have a better grasp on a overly
+concentrated density plot.
+
+#### Histogram equalisation
+
+Another useful option is [histogram
+equalisation](https://en.wikipedia.org/wiki/Histogram_equalization), with which
+colours are redistributed so as to have a more equalised distribution across
+the image:
+
+```python tf.shade(agg, how='eq_hist')```
+
+#### Spreading
+
+Sometimes, when zooming, sparse structures can be difficult to see. This is due
+to the very nature of datashader plotting: each pixel represents aggregate
+values, so sparse points are reduced to single pixels. To counteract this
+phenomenon, datashader provides functions as `spread()` or `dynspread()` which
+make help *spreading* smaller datapoints.
+
+::::{exercise}
+
+Create different types of visualisations using the techniques we introduced:
+linear, logarithmic, histogram equalisation and (dynamic) spreading). Try to
+find the most optimal (for your case) visualisation.
+
+::::
+
+#### Further options
+
+Datashader supports many other options, such as transparency control and
+category-based aggregation. Further information can be found in the
+[documentation](https://datashader.org/user_guide/index.html).
 
 ## Interactive visualisation with HoloViews
 
