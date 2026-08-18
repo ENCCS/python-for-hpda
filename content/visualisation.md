@@ -377,7 +377,9 @@ equalisation](https://en.wikipedia.org/wiki/Histogram_equalization), with which
 colours are redistributed so as to have a more equalised distribution across
 the image:
 
-```python tf.shade(agg, how='eq_hist')```
+```python
+tf.shade(agg, how='eq_hist')
+```
 
 #### Spreading
 
@@ -392,6 +394,54 @@ make help *spreading* smaller datapoints.
 Create different types of visualisations using the techniques we introduced:
 linear, logarithmic, histogram equalisation and (dynamic) spreading). Try to
 find the most optimal (for your case) visualisation.
+
+:::{solution}
+
+```python
+from datashader import transfer_functions as tf
+
+linear = tf.shade(
+    agg,
+    cmap="fire",
+    how="linear",
+)
+
+log = tf.shade(
+    agg,
+    cmap="fire",
+    how="log",
+)
+
+eq_hist = tf.shade(
+    agg,
+    cmap="fire",
+    how="eq_hist",
+)
+
+eq_hist_dyn = tf.dynspread(
+    tf.shade(
+        agg,
+        cmap="fire",
+        how="eq_hist",
+    )
+)
+
+linear
+```
+
+```python
+log
+```
+
+```python
+eq_hist
+```
+
+```python
+eq_hist_dyn
+```
+
+:::
 
 ::::
 
