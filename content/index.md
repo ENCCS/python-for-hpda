@@ -23,6 +23,7 @@ tabular-data
 interfacing-with-storage
 visualisation
 benchmarking
+parallel-computing
 multithreading
 dask
 
