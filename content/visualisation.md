@@ -34,8 +34,8 @@ The most direct approach is to create a scatter plot of all pickup locations:
 
 ```python
 df.plot.scatter(
-    x="pickup_longitude",
-    y="pickup_latitude"
+    x="X",
+    y="Y"
 )
 ```
 
@@ -113,8 +113,8 @@ For visualisation we will focus on pickup locations.
 
 ```python
 rides.select(
-    "pickup_longitude",
-    "pickup_latitude"
+    "X",
+    "Y"
 ).head()
 ```
 
@@ -122,10 +122,10 @@ Before plotting geographic data it is often worth performing a small amount of c
 
 ```python
 rides_clean = rides.filter(
-    pl.col("pickup_longitude").is_not_null()
-    & pl.col("pickup_latitude").is_not_null()
-    & pl.col("pickup_longitude").is_between(-75, -72)
-    & pl.col("pickup_latitude").is_between(40, 42)
+    pl.col("X").is_not_null()
+    & pl.col("Y").is_not_null()
+    & pl.col("X").is_between(-75, -72)
+    & pl.col("Y").is_between(40, 42)
 )
 ```
 
@@ -167,8 +167,8 @@ Before introducing Datashader, let us try the obvious solution.
 import hvplot.polars
 
 rides_clean.hvplot.scatter(
-    x="pickup_longitude",
-    y="pickup_latitude",
+    x="X",
+    y="Y",
     alpha=0.1,
     width=700,
     height=500
@@ -180,10 +180,6 @@ Depending on the dataset size, this may still work reasonably well.
 However, zoom out and consider what information the figure provides. Dense
 areas become dark blobs. Individual points are no longer meaningful. The
 overall structure of the city is difficult to see.
-
-This is a useful teaching moment because it demonstrates that the challenge is
-not only computational. Even if plotting were instantaneous, the visual
-representation is not necessarily the most informative.
 
 ### A note on Polars support
 
@@ -453,9 +449,11 @@ category-based aggregation. Further information can be found in the
 
 ## Interactive visualisation with HoloViews
 
-Static figures are useful, but exploratory analysis often involves repeatedly zooming, panning, and filtering.
+Static figures are useful, but exploratory analysis often involves repeatedly
+zooming, panning, and filtering.
 
-The HoloViz ecosystem combines particularly well with Datashader because aggregation can be performed dynamically as the user explores the data.
+The HoloViz ecosystem combines particularly well with Datashader because
+aggregation can be performed dynamically as the user explores the data.
 
 Start by enabling the HoloViews backend.
 
@@ -493,37 +491,17 @@ datashade(points)
 
 Try zooming into different parts of the figure.
 
-One of the key ideas behind this workflow is that the visualisation is recomputed when the viewport changes. Rather than plotting all observations at all scales, the visualisation is adapted to the current view.
-
----
-
-### Looking at the city through data
-
-The pickup locations alone already contain a surprising amount of information.
-
-As you zoom through the city, try to identify features that become visible through taxi activity patterns.
-
-::::{exercise}
-Working in pairs, identify:
-
-- JFK Airport,
-- LaGuardia Airport,
-- Central Park,
-- at least one major bridge crossing,
-- at least one tunnel crossing.
-
-Discuss what visual clues helped you identify each feature.
-::::
-
-Many participants find this exercise surprisingly engaging because the city effectively emerges from the data.
-
----
+One of the key ideas behind this workflow is that the visualisation is
+recomputed when the viewport changes. Rather than plotting all observations at
+all scales, the visualisation is adapted to the current view.
 
 ## Adding geographic context
 
-Longitude and latitude become much easier to interpret when shown together with a background map.
+Longitude and latitude become much easier to interpret when shown together with
+a background map.
 
-One of the most striking visualisations in the HoloViz ecosystem combines Datashader aggregation with web map tiles.
+One of the most striking visualisations in the HoloViz ecosystem combines
+Datashader aggregation with web map tiles.
 
 ```python
 import hvplot.polars
@@ -545,13 +523,14 @@ The visualisation now combines two pieces of information:
 - geographic context from the map,
 - taxi activity from the datashaded aggregation.
 
-At city scale we immediately see where activity is concentrated. As we zoom further in, neighbourhood-level and street-level structures begin to appear.
+At city scale we immediately see where activity is concentrated. As we zoom
+further in, neighbourhood-level and street-level structures begin to appear.
 
-This is often the first point in the lesson where participants experience the full benefit of the Datashader approach. Millions of observations can be explored interactively without first reducing the dataset to a small sample.
+This is often the first point in the lesson where participants experience the
+full benefit of the Datashader approach. Millions of observations can be
+explored interactively without first reducing the dataset to a small sample.
 
----
-
-### Exercise: Day versus night
+::::{exercise} Day vs night
 
 Taxi activity changes dramatically throughout the day.
 
@@ -564,8 +543,7 @@ rides = rides.with_columns(
 )
 ```
 
-::::{exercise}
-Create separate visualisations for daytime and nighttime rides.
+Now create separate visualisations for daytime and nighttime rides.
 
 Questions to investigate:
 
@@ -573,7 +551,6 @@ Questions to investigate:
 - Which areas become more important at night?
 - Do airports appear differently during different periods of the day?
 
-Discuss your observations with a neighbour before comparing them with the rest of the group.
 ::::
 
 ::::{solution}
@@ -591,18 +568,13 @@ night = rides.filter(
 Create separate datashaded visualisations and compare them side by side.
 ::::
 
----
+::::{exercise} Exploratory data analysis
 
-## Mini-project: Explore your own question
+At this stage we have all of the building blocks needed to perform exploratory
+visualisation on a large dataset.
 
-At this stage you have all of the building blocks needed to perform exploratory visualisation on a large dataset.
-
-::::{exercise}
-Work in groups of two or three.
-
-Formulate a question that can be investigated using the taxi dataset.
-
-Examples include:
+Let us consider a question that can be investigated using the taxi dataset, for
+example:
 
 - How do pickup locations vary with time of day?
 - Are different payment types associated with different parts of the city?
@@ -610,30 +582,34 @@ Examples include:
 - How does weekend activity differ from weekday activity?
 
 Create one visualisation that helps answer your question.
+
 ::::
-
-Be prepared to present both:
-
-1. your question,
-2. the visualisation you created,
-3. one interesting observation.
-
----
 
 ## Summary
 
-A common reaction when large visualisations become slow is to look for faster hardware or more efficient plotting libraries. Datashader takes a different approach. Instead of attempting to draw every observation, it focuses on visualising meaningful aggregates.
+A common reaction when large visualisations become slow is to look for faster
+hardware or more efficient plotting libraries. Datashader takes a different
+approach. Instead of attempting to draw every observation, it focuses on
+visualising meaningful aggregates.
 
-For geographic datasets such as NYC Taxi trips, this often leads not only to better performance but also to more informative figures. Patterns that are difficult to see in traditional scatter plots become immediately visible once observations are aggregated into a density map.
+For geographic datasets such as NYC Taxi trips, this often leads not only to
+better performance but also to more informative figures. Patterns that are
+difficult to see in traditional scatter plots become immediately visible once
+observations are aggregated into a density map.
 
-Combined with HoloViews and hvPlot, Datashader makes it possible to explore datasets containing millions of records interactively, without reducing them to a tiny sample.
+Combined with HoloViews and hvPlot, Datashader makes it possible to explore
+datasets containing millions of records interactively, without reducing them to
+a tiny sample.
 
 :::{keypoints}
 
-- Large datasets often require different visualisation strategies rather than simply faster plotting.
+- Large datasets often require different visualisation strategies rather than
+simply faster plotting.
 - Overplotting is both a performance problem and a visualisation problem.
 - Datashader aggregates observations into pixels before rendering.
 - HoloViews and hvPlot provide an interactive interface on top of Datashader.
 - Geographic map tiles provide useful context when exploring spatial data.
-- Interactive aggregation allows exploration of datasets that would otherwise be difficult to visualise directly.
+- Interactive aggregation allows exploration of datasets that would otherwise
+be difficult to visualise directly.
+
 :::
