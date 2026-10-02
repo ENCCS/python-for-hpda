@@ -3,3 +3,6 @@ jupyterlab
 jupyterlab_myst
 holoviews
 datashader
+hvplot
+pyarrow
+matplotlib
