@@ -165,15 +165,30 @@ Before introducing Datashader, let us try the obvious solution.
 
 ```python
 import hvplot.polars
+import holoviews as hv
 
-rides_clean.hvplot.scatter(
+plot = rides_clean.hvplot.scatter(
     x="X",
     y="Y",
     alpha=0.1,
     width=700,
     height=500
 )
+
+fig = hv.render(plot, backend="matplotlib")
+fig.savefig("test.png")
 ```
+
+:::{note}
+
+In a Jupyter notebook, the figure is displayed inline automatically. In a
+plain Python REPL, however, nothing appears on screen: `hv.render` returns a
+matplotlib `Figure` object, but the REPL has no display hook for figures.
+Moreover, the returned figure is not registered with pyplot, so even
+`plt.show()` or `fig.show()` will not display it. The `savefig` call above
+writes the figure to `test.png`, which you can open with any image viewer.
+
+:::
 
 Depending on the dataset size, this may still work reasonably well.
 
@@ -239,16 +254,16 @@ import pandas as pd
 coords = (
     rides_clean
     .select(
-        "pickup_longitude",
-        "pickup_latitude"
+        "X",
+        "Y"
     )
     .to_pandas()
 )
 
 agg = canvas.points(
     coords,
-    "pickup_longitude",
-    "pickup_latitude"
+    "X",
+    "Y"
 )
 ```
 
@@ -266,6 +281,31 @@ img = tf.shade(
 
 img
 ```
+
+:::{note}
+
+In a Jupyter notebook, evaluating `img` renders the image automatically,
+because datashader's image objects support the rich display protocol. In a
+plain Python REPL the same line only prints a text summary of the underlying
+array. To get a viewable image in the REPL, export it to a PNG file instead:
+
+```python
+ds.utils.export_image(img, "pickups")  # writes pickups.png
+```
+
+Then open `pickups.png` in an image viewer. The same applies to the shaded
+images in the exercises below.
+
+:::
+
+:::{note}
+
+The interactive parts of this episode (HoloViews with the Bokeh backend,
+`datashade`, map tiles) require a Jupyter notebook or JupyterLab, since the
+figures are rendered in the browser. They cannot be displayed in a plain
+Python REPL.
+
+:::
 
 At this point many structures that were invisible in the scatter plot begin to
 emerge naturally.
