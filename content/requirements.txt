@@ -1,0 +1,5 @@
+polars
+jupyterlab
+jupyterlab_myst
+holoviews
+datashader
