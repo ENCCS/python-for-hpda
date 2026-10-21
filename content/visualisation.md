@@ -422,7 +422,7 @@ Rendering this aggregation may reveal different spatial patterns than a density 
 
 #### Colouring
 
-As we saw earlier, the mapping between a colour scale and the aggregated values is performed using the `tf.shade()` function. A colourmap can be prescribed with the `cmap` keyword argument; different colourmaps can help emphasise different structures. The `cmap` argument accepts either a list of colours or a *colormap object* — a bare string such as `"fire"` is interpreted as a single named colour and will raise `ValueError: Unknown color: 'fire'`. Datashader ships with the [colorcet](https://colorcet.holoviz.org/) collection of perceptually uniform colourmaps, and any matplotlib colormap works as well:
+As we saw earlier, the mapping between a colour scale and the aggregated values is performed using the `tf.shade()` function. A colourmap can be prescribed with the `cmap` keyword argument; different colourmaps can help emphasise different structures. The `cmap` argument accepts either a list of colours or a *colormap object* . Datashader ships with the [colorcet](https://colorcet.holoviz.org/) collection of perceptually uniform colourmaps, and any matplotlib colormap works as well:
 
 ```python
 import colorcet as cc
@@ -642,10 +642,6 @@ The visualisation now combines two pieces of information:
 At city scale we immediately see where activity is concentrated. As we zoom
 further in, neighbourhood-level and street-level structures begin to appear.
 
-This is often the first point in the lesson where participants experience the
-full benefit of the Datashader approach. Millions of observations can be
-explored interactively without first reducing the dataset to a small sample.
-
 ::::{exercise} Day vs night
 
 Taxi activity changes dramatically throughout the day.
@@ -659,9 +655,7 @@ Questions to investigate:
 - Which areas become more important at night?
 - Do airports appear differently during different periods of the day?
 
-::::
-
-::::{solution}
+:::{solution}
 
 ```python
 day = rides.filter(
@@ -674,6 +668,8 @@ night = rides.filter(
 ```
 
 Create separate datashaded visualisations and compare them side by side.
+
+:::
 ::::
 
 ::::{exercise} Exploratory data analysis
