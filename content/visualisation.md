@@ -4,11 +4,11 @@
 
 - Understand why traditional plotting approaches struggle with large datasets.
 - Learn the basic ideas behind Datashader's aggregation-based rendering model.
-- Create static visualisations of the NYC Taxi dataset using Datashader.
+- Create static visualisations of millions of taxi pickup locations using Datashader.
 - Use HoloViews and hvPlot to build interactive visualisations that remain
-responsive when exploring millions of records.
+  responsive when exploring millions of records.
 - Overlay aggregated data on geographic map tiles and use interactive
-exploration to discover patterns in the data.
+  exploration to discover patterns in the data.
 :::
 
 :::{questions}
@@ -21,9 +21,9 @@ exploration to discover patterns in the data.
 
 ## Motivation
 
-The NYC Taxi dataset from the previous episode has become a classic example in
-data science and visualisation. A single year of taxi trips contains millions
-of records, each associated with a pickup location, a dropoff location,
+The NYC Taxi dataset has become a classic example in data science and
+visualisation. A single month of taxi trips contains more than ten million
+records, each associated with a pickup location, a dropoff location,
 timestamps, fares, distances, and other attributes.
 
 Suppose we want to answer a simple question:
@@ -34,8 +34,8 @@ The most direct approach is to create a scatter plot of all pickup locations:
 
 ```python
 df.plot.scatter(
-    x="X",
-    y="Y"
+    x="pickup_x",
+    y="pickup_y"
 )
 ```
 
@@ -56,10 +56,10 @@ surprisingly, more informative visualisations.
 Before introducing any new tools, it is worth reflecting on why a traditional
 scatter plot struggles.
 
-Imagine plotting ten million taxi pickup locations. At first sight it seems
-natural to draw ten million points. However, the display only contains a finite
-number of pixels. Large numbers of observations will inevitably fall into the
-same screen regions.
+Imagine plotting more than ten million taxi pickup locations. At first sight
+it seems natural to draw more than ten million points. However, the display
+only contains a finite number of pixels. Large numbers of observations will
+inevitably fall into the same screen regions.
 
 This leads to a number of problems:
 
@@ -96,87 +96,115 @@ millions of rows.
 An important consequence is that we no longer think primarily in terms of
 plotting points. Instead, we think in terms of visualising aggregates.
 
-## Loading and preparing the data
+## Loading the data
 
-Throughout this lesson we assume that the taxi data have already been loaded
-into a Polars DataFrame.
+In this episode we will work with a dataset of **11.8 million yellow-taxi
+trips from January 2015**. It is the same dataset that is used throughout the
+[Datashader](https://datashader.org/) documentation, and it is distributed as a
+~370 MB parquet file. The following snippet downloads it once and then loads it
+into a Polars DataFrame:
 
 ```python
-import polars as pl
+import urllib.request
+from pathlib import Path
 
-rides = pl.read_parquet(
-    "nyc_yellow_taxi_2025-01.parquet"
-)
+url = "https://s3.amazonaws.com/datashader-data/nyc_taxi_wide.parq"
+archive = Path("nyc_taxi_wide.parq")
+
+if not archive.exists():
+    print("Downloading NYC taxi dataset (approx. 370 MB)...")
+    urllib.request.urlretrieve(url, archive)
 ```
 
-For visualisation we will focus on pickup locations.
+```python
+import pandas as pd
+import polars as pl
+
+rides = pl.from_pandas(
+    pd.read_parquet("nyc_taxi_wide.parq", engine="fastparquet")
+)
+
+rides.height
+```
+
+:::{note}
+
+This parquet file was written with an old encoding that neither Polars nor
+recent versions of pyarrow can decode, which is why we read it through
+**fastparquet** (`pip install fastparquet`). Everything after this snippet is
+pure Polars.
+
+:::
+
+The columns we will use are the pickup coordinates `pickup_x` and `pickup_y`,
+the trip distance, and a `pickup_hour` column:
 
 ```python
 rides.select(
-    "X",
-    "Y"
+    "pickup_x",
+    "pickup_y"
 ).head()
 ```
 
-Before plotting geographic data it is often worth performing a small amount of cleaning.
+:::{note}
 
-```python
-rides_clean = rides.filter(
-    pl.col("X").is_not_null()
-    & pl.col("Y").is_not_null()
-    & pl.col("X").is_between(-75, -72)
-    & pl.col("Y").is_between(40, 42)
-)
-```
+This is a *pre-anonymisation* release of the taxi data: every trip carries the
+**actual GPS coordinates** of its pickup and dropoff locations, projected to
+web-mercator coordinates (EPSG:3857 — this is why the values are large numbers
+like `-8235000`, not degrees). Since mid-2016 the TLC only publishes taxi zone
+IDs instead of coordinates, so this older release is what all the classic
+Datashader and HoloViews taxi examples are based on.
 
-The exact filtering criteria are not particularly important. The goal is simply
-to remove clearly invalid coordinates.
+:::
 
 ### Exercise: Inspect the dataset
 
 ::::{exercise}
 Determine:
 
-1. The number of rows before filtering.
-2. The number of rows after filtering.
-3. The percentage of rows removed.
+1. The number of rows.
+2. The estimated size of the DataFrame in memory
+   (hint: `rides.estimated_size("mb")`).
+3. The minimum and maximum of `pickup_x` and `pickup_y`
+   (hint: `rides.select(...).describe()`).
 
-How large is the dataset that you are working with?
+Do the coordinates look like sensible New York City locations?
 ::::
 
 ::::{solution}
 
 ```python
-before = rides.height
-after = rides_clean.height
+print(f"rows          : {rides.height:,}")
+print(f"estimated size: {rides.estimated_size('mb'):.0f} MB")
 
-removed = 100 * (before - after) / before
-
-print(f"Rows before filtering: {before}")
-print(f"Rows after filtering : {after}")
-print(f"Removed: {removed:.2f}%")
+rides.select(
+    "pickup_x",
+    "pickup_y"
+).describe()
 ```
 
 ::::
 
 ## First attempt: a scatter plot
 
-Before introducing Datashader, let us try the obvious solution.
+Before introducing Datashader, let us try the obvious solution: a plain
+scatter plot of every pickup location, rendered with matplotlib.
 
 ```python
 import hvplot.polars
 import holoviews as hv
 
-plot = rides_clean.hvplot.scatter(
-    x="X",
-    y="Y",
+plot = rides.hvplot.scatter(
+    x="pickup_x",
+    y="pickup_y",
     alpha=0.1,
     width=700,
     height=500
 )
 
 fig = hv.render(plot, backend="matplotlib")
-fig.savefig("test.png")
+fig.set_size_inches(7, 5)
+fig.savefig("scatter_mpl.png", dpi=150)
 ```
 
 :::{note}
@@ -186,15 +214,36 @@ plain Python REPL, however, nothing appears on screen: `hv.render` returns a
 matplotlib `Figure` object, but the REPL has no display hook for figures.
 Moreover, the returned figure is not registered with pyplot, so even
 `plt.show()` or `fig.show()` will not display it. The `savefig` call above
-writes the figure to `test.png`, which you can open with any image viewer.
+writes the figure to `scatter_mpl.png`, which you can open with any image
+viewer.
+
+Also note that `width` and `height` are Bokeh-backend options and are ignored
+when rendering with matplotlib; `set_size_inches` and `dpi` control the size
+of the saved figure instead.
 
 :::
 
-Depending on the dataset size, this may still work reasonably well.
+Be patient when running this: depending on your machine, plotting 11.8 million
+individual markers can take tens of seconds. That slowness is itself part of
+the lesson — and the resulting figure is arguably even more disappointing than
+the waiting time. It looks something like this:
 
-However, zoom out and consider what information the figure provides. Dense
-areas become dark blobs. Individual points are no longer meaningful. The
-overall structure of the city is difficult to see.
+- The whole of Manhattan and the inner boroughs have merged into a single
+  solid blob.
+- Only the largest empty regions (Central Park, the rivers, the airport
+  runways) are distinguishable.
+- All street-level, neighbourhood-level and density structure is hidden
+  beneath overlapping markers.
+
+::::{discussion}
+
+- What information is visible in the scatter plot?
+
+- What information is hidden?
+
+- Would subsampling the dataset solve all of these problems?
+
+::::
 
 ### A note on Polars support
 
@@ -221,16 +270,6 @@ call `DataFrame.hvplot.scatter()`.
 
 ::::
 
-:::{discussion}
-
-- What information is visible in the scatter plot?
-
-- What information is hidden?
-
-- Would subsampling the dataset solve all of these problems?
-
-:::
-
 ## Static visualisation with Datashader
 
 Datashader provides a different visualisation model based on aggregation.
@@ -246,24 +285,23 @@ canvas = ds.Canvas(
 )
 ```
 
-We then aggregate pickup locations onto that canvas.
+We then aggregate pickup locations onto that canvas. Datashader works with
+Pandas DataFrames, so we convert the two coordinate columns:
 
 ```python
-import pandas as pd
-
 coords = (
-    rides_clean
+    rides
     .select(
-        "X",
-        "Y"
+        "pickup_x",
+        "pickup_y"
     )
     .to_pandas()
 )
 
 agg = canvas.points(
     coords,
-    "X",
-    "Y"
+    "pickup_x",
+    "pickup_y"
 )
 ```
 
@@ -298,21 +336,28 @@ images in the exercises below.
 
 :::
 
+Compare this figure with the matplotlib scatter plot: rendering took a small
+fraction of the time, and individual streets, bridges and the street grid of
+each borough are now clearly visible. All of that structure was present in the
+scatter plot too — it was simply buried under overplotting.
+
 :::{note}
 
 The interactive parts of this episode (HoloViews with the Bokeh backend,
-`datashade`, map tiles) require a Jupyter notebook or JupyterLab, since the
-figures are rendered in the browser. They cannot be displayed in a plain
-Python REPL.
+`datashade`, map tiles) are designed for a Jupyter notebook or JupyterLab,
+where the figures are rendered inline in the browser. They cannot be
+displayed directly in a plain Python REPL — see below for how to serve them
+in a browser anyway.
+
+In the REPL this is harmless rather than an error: `hv.extension("bokeh")`
+loads without complaint, and evaluating something like `datashade(points)`
+simply prints a textual summary of the object — no figure appears. The
+section on interactive visualisation below shows how to open the same plot
+in a browser from a REPL, and for the static parts you can use the
+matplotlib/static-datashader snippets above whenever you want a viewable
+image.
 
 :::
-
-At this point many structures that were invisible in the scatter plot begin to
-emerge naturally.
-
-Dense concentrations of pickups reveal activity centres, while transportation
-corridors often become visible even though no road network data have been
-supplied.
 
 ### Exercise: Comparing resolutions
 
@@ -341,14 +386,14 @@ large = ds.Canvas(
 
 agg_small = small.points(
     coords,
-    "pickup_longitude",
-    "pickup_latitude"
+    "pickup_x",
+    "pickup_y"
 )
 
 agg_large = large.points(
     coords,
-    "pickup_longitude",
-    "pickup_latitude"
+    "pickup_x",
+    "pickup_y"
 )
 ```
 
@@ -360,9 +405,9 @@ So far each pixel represents the number of rides associated with that location, 
 
 ```python
 canvas.points(
-    df,
-    "pickup_longitude",
-    "pickup_latitude",
+    coords,
+    "pickup_x",
+    "pickup_y",
     agg=ds.count()
 )
 ```
@@ -372,11 +417,18 @@ to examine average trip distance spatially.
 
 ```python
 agg_distance = canvas.points(
-    rides_clean.to_pandas(),
-    "pickup_longitude",
-    "pickup_latitude",
+    rides.to_pandas(),
+    "pickup_x",
+    "pickup_y",
     agg=ds.mean("trip_distance")
 )
+
+img_distance = tf.shade(
+    agg_distance,
+    cmap=["lightblue", "darkblue"]
+)
+
+img_distance
 ```
 
 Rendering this aggregation may reveal different spatial patterns than a density map.
@@ -385,11 +437,18 @@ Rendering this aggregation may reveal different spatial patterns than a density 
 
 #### Colouring
 
-As we saw earlier, the mapping between a colour scale and the aggregated values is performed using the `tf.shade()` function. A colourmap can be prescribed with the `cmap` keyword argument; different colourmaps can help emphasise different structures. Common choices for density plots include `fire`, `viridis` and `inferno`, e.g.:
+As we saw earlier, the mapping between a colour scale and the aggregated values is performed using the `tf.shade()` function. A colourmap can be prescribed with the `cmap` keyword argument; different colourmaps can help emphasise different structures. The `cmap` argument accepts either a list of colours or a *colormap object* — a bare string such as `"fire"` is interpreted as a single named colour and will raise `ValueError: Unknown color: 'fire'`. Datashader ships with the [colorcet](https://colorcet.holoviz.org/) collection of perceptually uniform colourmaps, and any matplotlib colormap works as well:
 
 ```python
-tf.shade(agg, cmap='fire')
+import colorcet as cc
+import matplotlib.pyplot as plt
+
+tf.shade(agg, cmap=cc.cm["fire"])
+tf.shade(agg, cmap=plt.get_cmap("viridis"))
+tf.shade(agg, cmap=plt.get_cmap("inferno"))
 ```
+
+Common choices for density plots include `fire`, `viridis` and `inferno`.
 
 #### Linear and logarithmic scaling
 
@@ -435,29 +494,30 @@ find the most optimal (for your case) visualisation.
 
 ```python
 from datashader import transfer_functions as tf
+import colorcet as cc
 
 linear = tf.shade(
     agg,
-    cmap="fire",
+    cmap=cc.cm["fire"],
     how="linear",
 )
 
 log = tf.shade(
     agg,
-    cmap="fire",
+    cmap=cc.cm["fire"],
     how="log",
 )
 
 eq_hist = tf.shade(
     agg,
-    cmap="fire",
+    cmap=cc.cm["fire"],
     how="eq_hist",
 )
 
 eq_hist_dyn = tf.dynspread(
     tf.shade(
         agg,
-        cmap="fire",
+        cmap=cc.cm["fire"],
         how="eq_hist",
     )
 )
@@ -509,8 +569,8 @@ Next construct a set of points.
 points = hv.Points(
     coords,
     kdims=[
-        "pickup_longitude",
-        "pickup_latitude"
+        "pickup_x",
+        "pickup_y"
     ]
 )
 ```
@@ -531,6 +591,29 @@ datashade(points)
 
 Try zooming into different parts of the figure.
 
+:::{note}
+
+In a Jupyter notebook the figure above is displayed inline and is fully
+interactive. To get the same experience in a plain Python REPL, serve the
+plot with Panel (which is installed together with HoloViews):
+
+```python
+import panel as pn
+
+server = pn.panel(datashade(points)).show(threaded=True)
+```
+
+`.show()` starts a small local web server and opens the plot in your
+browser (`threaded=True` is important in a REPL, otherwise the call blocks
+the prompt). Zooming and panning re-runs the datashader aggregation live,
+exactly as in a notebook. The server keeps running until you call
+`server.stop()` or exit Python.
+
+The same works for the map-tiles plot below, e.g.
+`pn.panel(tiles_plot).show(threaded=True)`.
+
+:::
+
 One of the key ideas behind this workflow is that the visualisation is
 recomputed when the viewport changes. Rather than plotting all observations at
 all scales, the visualisation is adapted to the current view.
@@ -546,9 +629,9 @@ Datashader aggregation with web map tiles.
 ```python
 import hvplot.polars
 
-rides_clean.hvplot.points(
-    x="pickup_longitude",
-    y="pickup_latitude",
+tiles_plot = rides.hvplot.points(
+    x="pickup_x",
+    y="pickup_y",
     rasterize=True,
     tiles=True,
     cmap="fire",
@@ -557,6 +640,14 @@ rides_clean.hvplot.points(
     frame_height=600,
 )
 ```
+
+:::{note}
+
+Map tiles are downloaded from the internet, so this example requires a
+network connection (and a Jupyter notebook, or
+`pn.panel(tiles_plot).show(threaded=True)` in a REPL as explained above).
+
+:::
 
 The visualisation now combines two pieces of information:
 
@@ -574,16 +665,8 @@ explored interactively without first reducing the dataset to a small sample.
 
 Taxi activity changes dramatically throughout the day.
 
-Create an additional column containing the pickup hour.
-
-```python
-rides = rides.with_columns(
-    pl.col("pickup_datetime").dt.hour()
-    .alias("hour")
-)
-```
-
-Now create separate visualisations for daytime and nighttime rides.
+The dataset already contains a `pickup_hour` column. Use it to create
+separate visualisations for daytime (6:00–18:59) and nighttime rides.
 
 Questions to investigate:
 
@@ -597,11 +680,11 @@ Questions to investigate:
 
 ```python
 day = rides.filter(
-    pl.col("hour").is_between(6, 18)
+    pl.col("pickup_hour").is_between(6, 18)
 )
 
 night = rides.filter(
-    ~pl.col("hour").is_between(6, 18)
+    ~pl.col("pickup_hour").is_between(6, 18)
 )
 ```
 
@@ -617,7 +700,7 @@ Let us consider a question that can be investigated using the taxi dataset, for
 example:
 
 - How do pickup locations vary with time of day?
-- Are different payment types associated with different parts of the city?
+- Are different trip distances associated with different parts of the city?
 - Which locations generate the longest average trips?
 - How does weekend activity differ from weekday activity?
 
@@ -644,12 +727,12 @@ a tiny sample.
 :::{keypoints}
 
 - Large datasets often require different visualisation strategies rather than
-simply faster plotting.
+  simply faster plotting.
 - Overplotting is both a performance problem and a visualisation problem.
 - Datashader aggregates observations into pixels before rendering.
 - HoloViews and hvPlot provide an interactive interface on top of Datashader.
 - Geographic map tiles provide useful context when exploring spatial data.
 - Interactive aggregation allows exploration of datasets that would otherwise
-be difficult to visualise directly.
+  be difficult to visualise directly.
 
 :::

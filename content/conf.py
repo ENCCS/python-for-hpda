@@ -71,6 +71,9 @@ exclude_patterns = [
     ".DS_Store",
     "jupyter_execute",
     "*venv*",
+    # visualisation.md and visualisation.ipynb share a docname; build the .md
+    # (the .ipynb is a teaching scratch notebook and would shadow the lesson).
+    "visualisation.ipynb",
 ]
 
 # -- Options for HTML output -------------------------------------------------

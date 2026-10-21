@@ -6,3 +6,4 @@ datashader
 hvplot
 pyarrow
 matplotlib
+fastparquet
