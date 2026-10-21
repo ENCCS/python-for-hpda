@@ -26,9 +26,8 @@ visualisation. A single month of taxi trips contains more than ten million
 records, each associated with a pickup location, a dropoff location,
 timestamps, fares, distances, and other attributes.
 
-Suppose we want to answer a simple question:
-
-> Where are taxis picked up in New York City?
+Suppose we want to answer a simple question: where are taxis picked up in New
+York City?
 
 The most direct approach is to create a scatter plot of all pickup locations:
 
@@ -56,10 +55,10 @@ surprisingly, more informative visualisations.
 Before introducing any new tools, it is worth reflecting on why a traditional
 scatter plot struggles.
 
-Imagine plotting more than ten million taxi pickup locations. At first sight
-it seems natural to draw more than ten million points. However, the display
-only contains a finite number of pixels. Large numbers of observations will
-inevitably fall into the same screen regions.
+Imagine plotting more than ten million taxi pickup locations (we're doing it in
+some minutes). At first sight it seems natural to draw more than ten million
+points. However, the display only contains a finite number of pixels. Large
+numbers of observations will inevitably fall into the same screen regions.
 
 This leads to a number of problems:
 
@@ -98,11 +97,12 @@ plotting points. Instead, we think in terms of visualising aggregates.
 
 ## Loading the data
 
-In this episode we will work with a dataset of **11.8 million yellow-taxi
-trips from January 2015**. It is the same dataset that is used throughout the
-[Datashader](https://datashader.org/) documentation, and it is distributed as a
-~370 MB parquet file. The following snippet downloads it once and then loads it
-into a Polars DataFrame:
+In this episode we will work with a dataset of **11.8 million yellow-taxi trips
+from January 2015**. It is the same dataset that is used throughout the
+[Datashader](https://datashader.org/) documentation (an old version of the one
+we produced in the previous episode), and it is distributed as a ~370 MB
+parquet file. The following snippet downloads it once and then loads it into a
+Polars DataFrame:
 
 ```python
 import urllib.request
@@ -157,9 +157,7 @@ Datashader and HoloViews taxi examples are based on.
 
 :::
 
-### Exercise: Inspect the dataset
-
-::::{exercise}
+::::{exercise} Inspect the dataset
 Determine:
 
 1. The number of rows.
@@ -169,9 +167,8 @@ Determine:
    (hint: `rides.select(...).describe()`).
 
 Do the coordinates look like sensible New York City locations?
-::::
 
-::::{solution}
+:::{solution}
 
 ```python
 print(f"rows          : {rides.height:,}")
@@ -183,6 +180,7 @@ rides.select(
 ).describe()
 ```
 
+:::
 ::::
 
 ## First attempt: a scatter plot
@@ -224,26 +222,11 @@ of the saved figure instead.
 :::
 
 Be patient when running this: depending on your machine, plotting 11.8 million
-individual markers can take tens of seconds. That slowness is itself part of
-the lesson — and the resulting figure is arguably even more disappointing than
-the waiting time. It looks something like this:
+individual markers can take tens of seconds, which is part of why we would like
+to move to a more performant approach. Moreover, the figure itself might look
+disappointing:
 
-- The whole of Manhattan and the inner boroughs have merged into a single
-  solid blob.
-- Only the largest empty regions (Central Park, the rivers, the airport
-  runways) are distinguishable.
-- All street-level, neighbourhood-level and density structure is hidden
-  beneath overlapping markers.
-
-::::{discussion}
-
-- What information is visible in the scatter plot?
-
-- What information is hidden?
-
-- Would subsampling the dataset solve all of these problems?
-
-::::
+![Matplotlib scatter](plots/scatter_mpl.png)
 
 ### A note on Polars support
 
@@ -339,19 +322,21 @@ images in the exercises below.
 Compare this figure with the matplotlib scatter plot: rendering took a small
 fraction of the time, and individual streets, bridges and the street grid of
 each borough are now clearly visible. All of that structure was present in the
-scatter plot too — it was simply buried under overplotting.
+scatter plot too: it was simply buried under overplotting.
+
+![Static Datashader visualisation](plots/pickups.png)
 
 :::{note}
 
 The interactive parts of this episode (HoloViews with the Bokeh backend,
 `datashade`, map tiles) are designed for a Jupyter notebook or JupyterLab,
-where the figures are rendered inline in the browser. They cannot be
-displayed directly in a plain Python REPL — see below for how to serve them
-in a browser anyway.
+where the figures are rendered inline in the browser. They cannot be displayed
+directly in a plain Python REPL, so we use a workaround to open them in the
+browser.
 
 In the REPL this is harmless rather than an error: `hv.extension("bokeh")`
 loads without complaint, and evaluating something like `datashade(points)`
-simply prints a textual summary of the object — no figure appears. The
+simply prints a textual summary of the object and no figure appears. The
 section on interactive visualisation below shows how to open the same plot
 in a browser from a REPL, and for the static parts you can use the
 matplotlib/static-datashader snippets above whenever you want a viewable
@@ -359,9 +344,7 @@ image.
 
 :::
 
-### Exercise: Comparing resolutions
-
-::::{exercise}
+::::{exercise} Comparing resolutions
 Create Datashader visualisations at two different resolutions:
 
 - 400 × 300 pixels
@@ -369,9 +352,7 @@ Create Datashader visualisations at two different resolutions:
 
 Compare the resulting images.
 
-::::
-
-::::{solution}
+:::{solution}
 
 ```python
 small = ds.Canvas(
@@ -397,11 +378,13 @@ agg_large = large.points(
 )
 ```
 
+:::
 ::::
 
 ### Beyond simple counts
 
-So far each pixel represents the number of rides associated with that location, so our first example is equivalent to the following:
+So far each pixel represents the number of rides associated with that location,
+so our first example is equivalent to the following:
 
 ```python
 canvas.points(
@@ -431,7 +414,9 @@ img_distance = tf.shade(
 img_distance
 ```
 
-Rendering this aggregation may reveal different spatial patterns than a density map.
+Rendering this aggregation may reveal different spatial patterns than a density map:
+
+![Aggregate by distance](plots/distance.png)
 
 ### Other options and settings
 
